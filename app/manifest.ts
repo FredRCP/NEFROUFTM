@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "NEFRO-UFTM",
+    name: "NefroUFTM",
     short_name: "NefroUFTM",
     description: "Sistema de gestão de interconsultas nefrológicas — HC-UFTM/EBSERH",
     start_url: "/dashboard",
