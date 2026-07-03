@@ -1,0 +1,188 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+*, *::before, *::after { box-sizing: border-box; }
+
+:root {
+  --bg:          #f6f8fb;
+  --bg2:         #edf0f7;
+  --bg3:         #e2e7f0;
+  --card:        #ffffff;
+  --card2:       #f7fafc;
+  --border:      #d4dce8;
+  --border2:     #b8cde0;
+  --accent:      #1e4f88;
+  --accent2:     #2563a8;
+  --accent-dim:  #e8f0fb;
+  --green:       #1a7a52;
+  --green-dim:   #e8f5ef;
+  --amber:       #c2660a;
+  --amber-dim:   #fef3e2;
+  --red:         #b03020;
+  --red-dim:     #fdecea;
+  --text:        #18293d;
+  --text2:       #46607a;
+  --text3:       #7a94a8;
+
+  --font:        'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --mono:        'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  --nc-radius:      10px;
+  --nc-radius-lg:   16px;
+  --nc-shadow-sm:   0 1px 4px rgba(0,0,0,0.07);
+  --nc-shadow:      0 4px 18px rgba(0,0,0,0.09);
+  --nc-shadow-md:   0 6px 24px rgba(0,0,0,0.12);
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+
+/* ── Inputs ── */
+.nc-input {
+  width: 100%;
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: var(--nc-radius);
+  padding: 9px 12px;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-shadow: var(--nc-shadow-sm);
+}
+.nc-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(30,79,136,0.12); }
+.nc-input::placeholder { color: var(--text3); }
+textarea.nc-input { resize: none; }
+
+/* ── Botões ── */
+.nc-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 9px 18px; border-radius: var(--nc-radius);
+  font-family: var(--font); font-size: 13px; font-weight: 700;
+  cursor: pointer; border: none; transition: all 0.15s; white-space: nowrap;
+}
+.nc-btn:active { transform: scale(0.97); }
+.nc-btn:disabled { cursor: default; opacity: 0.6; }
+.nc-btn-primary { background: var(--accent); color: white; }
+.nc-btn-primary:hover:not(:disabled) { background: var(--accent2); box-shadow: 0 4px 14px rgba(30,79,136,0.3); }
+.nc-btn-ghost { background: var(--card2); color: var(--text2); border: 1.5px solid var(--border); }
+.nc-btn-ghost:hover:not(:disabled) { background: var(--bg3); }
+.nc-btn-danger { background: var(--red-dim); color: var(--red); border: 1px solid rgba(176,48,32,0.2); }
+
+/* ── Label uppercase ── */
+.nc-label {
+  display: block;
+  font-size: 10px; font-weight: 700; color: var(--text3);
+  text-transform: uppercase; letter-spacing: 0.07em;
+  margin-bottom: 5px;
+}
+
+/* ── Cards ── */
+.nc-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--nc-radius-lg);
+  box-shadow: var(--nc-shadow-sm);
+  transition: box-shadow 0.2s;
+}
+.nc-card:hover { box-shadow: var(--nc-shadow); }
+
+/* ── Badges ── */
+.nc-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px; border-radius: 99px; font-size: 11px; font-weight: 700;
+}
+.nc-badge-blue   { background: var(--accent-dim); color: var(--accent); }
+.nc-badge-green  { background: var(--green-dim); color: var(--green); }
+.nc-badge-red    { background: var(--red-dim); color: var(--red); }
+.nc-badge-amber  { background: var(--amber-dim); color: var(--amber); }
+
+/* ── Section divider ── */
+.nc-section {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 8px; margin-top: 14px;
+}
+.nc-section-label {
+  font-size: 10px; font-weight: 700; color: var(--text3);
+  text-transform: uppercase; letter-spacing: 0.07em; white-space: nowrap;
+}
+.nc-section-line { flex: 1; height: 1px; background: var(--border); }
+
+/* ── Tabs ── */
+.nc-tab-bar {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+  flex-shrink: 0;
+}
+.nc-tab {
+  padding: 10px 16px; font-size: 12.5px; font-weight: 600;
+  color: var(--text3); cursor: pointer; border: none; background: none;
+  border-bottom: 2px solid transparent; font-family: var(--font);
+  transition: color 0.15s, border-color 0.15s; white-space: nowrap;
+}
+.nc-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.nc-tab:hover:not(.active) { color: var(--text2); background: var(--bg2); }
+
+/* ── Chip tags ── */
+.nc-chip {
+  padding: 4px 11px; border-radius: 99px; font-size: 11px; font-weight: 600;
+  border: 1.5px solid var(--border); background: var(--card); color: var(--text2);
+  cursor: pointer; transition: all 0.15s; box-shadow: var(--nc-shadow-sm);
+  user-select: none;
+}
+.nc-chip:hover { border-color: var(--accent); color: var(--accent); }
+.nc-chip.active { background: var(--accent); border-color: var(--accent); color: white; }
+.nc-chip.danger { background: var(--red-dim); border-color: rgba(176,48,32,0.3); color: var(--red); }
+
+/* ── Topbar ── */
+.nc-topbar {
+  display: flex; align-items: center; gap: 12px;
+  padding: 0 16px; height: 52px;
+  background: #1e3a5f;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  flex-shrink: 0; z-index: 10;
+}
+
+/* ── Exame box ── */
+.nc-exame-box {
+  background: var(--accent-dim);
+  border: 1.5px solid #c5d8f5;
+  border-radius: var(--nc-radius);
+  padding: 8px 12px;
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums;
+  font-size: 12.5px;
+  color: var(--accent2);
+  line-height: 1.8;
+}
+
+/* ── Spinner ── */
+@keyframes spin { to { transform: rotate(360deg); } }
+.nc-spin { animation: spin 0.7s linear infinite; }
+
+/* ── Toast ── */
+.nc-toast {
+  position: fixed; top: 64px; left: 50%; transform: translateX(-50%);
+  background: var(--text); color: white; border-radius: var(--nc-radius);
+  padding: 10px 18px; font-size: 13px; font-weight: 500; z-index: 999;
+  white-space: nowrap; box-shadow: var(--nc-shadow);
+  animation: fadeDown 0.22s ease;
+}
+@keyframes fadeDown {
+  from { opacity:0; transform: translate(-50%, -10px); }
+  to   { opacity:1; transform: translate(-50%, 0); }
+}
