@@ -64,7 +64,7 @@ export default async function DetalhePacientePage({
           }}
         >
           <span style={{ fontSize: 16, lineHeight: 1 }}>←</span>
-          Dashboard
+          Tela Principal
         </Link>
 
         <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 18, flexShrink: 0 }}>/</span>
