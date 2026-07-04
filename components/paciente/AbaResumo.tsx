@@ -15,26 +15,12 @@ interface AbaResumoProps {
   internacao: Internacao;
 }
 
-// Mantido em ordem alfabética e sincronizado com o constraint
-// acompanhamentos_nefro_etiologia_check no Supabase.
 const ETIOLOGIAS_LRA = [
-  "Cardiorrenal",
-  "Glomerulonefrite",
-  "Hipovolemia",
-  "Lise_tumoral",
-  "Mieloma_gamopatia_monoclonal",
-  "Necrose_cortical",
-  "Nefropatia_por_contraste",
-  "NIA",
-  "NTA",
-  "Obstrucao",
-  "Outras",
-  "Rabdomiolise",
-  "Sepse",
-  "Sindrome_hepatorrenal",
+  "Cardiorrenal", "Glomerulonefrite", "Hipovolemia", "Lise_tumoral",
+  "Mieloma_gamopatia_monoclonal", "Necrose_cortical", "Nefropatia_por_contraste",
+  "NIA", "NTA", "Obstrucao", "Outras", "Rabdomiolise", "Sepse", "Sindrome_hepatorrenal",
 ];
 
-// Sincronizado com o constraint acompanhamentos_nefro_diagnostico_principal_check
 const DIAGNOSTICOS_PRINCIPAIS = [
   { value: "Avaliacao_plasmaferese", label: "Avaliação para plasmaférese" },
   { value: "DHE", label: "Distúrbios Hidroeletrolíticos (DHE)" },
@@ -64,10 +50,25 @@ function calcularIdade(dataNascimento: string | null): string {
   const nasc = new Date(dataNascimento);
   const hoje = new Date();
   let idade = hoje.getFullYear() - nasc.getFullYear();
-  if (hoje.getMonth() < nasc.getMonth() || (hoje.getMonth() === nasc.getMonth() && hoje.getDate() < nasc.getDate())) {
-    idade--;
-  }
+  if (hoje.getMonth() < nasc.getMonth() ||
+    (hoje.getMonth() === nasc.getMonth() && hoje.getDate() < nasc.getDate())) idade--;
   return `${idade} anos`;
+}
+
+// Cabeçalho de seção — igual ao estilo das barras do dashboard
+function SecaoHeader({ label, action }: { label: string; action?: React.ReactNode }) {
+  return (
+    <div
+      className="flex items-center justify-between rounded-md px-3 py-2 mb-3"
+      style={{ background: "#1e3a5f" }}
+    >
+      <span className="text-sm font-extrabold uppercase tracking-widest"
+        style={{ color: "white", letterSpacing: "0.07em" }}>
+        {label}
+      </span>
+      {action}
+    </div>
+  );
 }
 
 export function AbaResumo({ acompanhamento, paciente, internacao }: AbaResumoProps) {
@@ -110,263 +111,227 @@ export function AbaResumo({ acompanhamento, paciente, internacao }: AbaResumoPro
     setErro(null);
     startTransition(async () => {
       const resultado = await darBaixaAcompanhamento(acompanhamento.id, motivoAlta, desfechoRenal);
-      if (!resultado.sucesso) {
-        setErro(resultado.erro || "Erro ao dar baixa.");
-        return;
-      }
+      if (!resultado.sucesso) { setErro(resultado.erro || "Erro ao dar baixa."); return; }
       router.push("/dashboard");
     });
   }
 
   return (
-    <div className="space-y-6">
-      {/* Dados demográficos — botão de editar abre o modal de edição */}
-      <section>
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold" style={{ color: "var(--text)" }}>Dados do paciente</h3>
-          <button
-            onClick={() => setModalEdicaoAberto(true)}
-            className="cursor-pointer text-xs font-semibold transition hover:opacity-70"
-            style={{ color: "var(--accent)" }}
-          >
-            ✏ Editar paciente / leito
-          </button>
-        </div>
-        <dl className="mt-2 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-          <div>
-            <dt className="text-xs" style={{ color: "var(--text3)" }}>Idade</dt>
-            <dd style={{ color: "var(--text2)" }}>{calcularIdade(paciente.data_nascimento)}</dd>
-          </div>
-          <div>
-            <dt className="text-xs" style={{ color: "var(--text3)" }}>Sexo</dt>
-            <dd style={{ color: "var(--text2)" }}>{paciente.sexo || "—"}</dd>
-          </div>
-          <div>
-            <dt className="text-xs" style={{ color: "var(--text3)" }}>RG hospitalar</dt>
-            <dd style={{ color: "var(--text2)" }}>{paciente.rg_hospitalar}</dd>
-          </div>
-          <div>
-            <dt className="text-xs" style={{ color: "var(--text3)" }}>Setor / leito</dt>
-            <dd style={{ color: "var(--text2)" }}>
-              {internacao.setor.replace(/_/g, " ")}
-              {internacao.enfermaria_leito ? ` · ${internacao.enfermaria_leito}` : ""}
-            </dd>
-          </div>
-        </dl>
+    <div className="space-y-5">
 
-        {paciente.comorbidades.length > 0 && (
-          <div className="mt-3">
-            <dt className="text-xs" style={{ color: "var(--text3)" }}>Comorbidades</dt>
-            <div className="mt-1 flex flex-wrap gap-1.5">
-              {paciente.comorbidades.map((c) => (
-                <span key={c} className="nc-badge nc-badge-blue">
-                  {c.replace(/_/g, " ")}
-                </span>
-              ))}
+      {/* ── Dados do paciente ─────────────────────────────────────────── */}
+      <section>
+        <SecaoHeader
+          label="Dados do paciente"
+          action={
+            <button
+              onClick={() => setModalEdicaoAberto(true)}
+              className="cursor-pointer rounded-full px-3 py-1 text-xs font-bold transition hover:opacity-80"
+              style={{ background: "rgba(255,255,255,0.15)", color: "white", border: "1px solid rgba(255,255,255,0.25)" }}
+            >
+              ✏ Editar
+            </button>
+          }
+        />
+        <div className="nc-card p-4">
+          {/* Linha principal: nome + leito em destaque */}
+          <div className="mb-3 flex items-start justify-between gap-3">
+            <div>
+              <p className="text-base font-extrabold" style={{ color: "var(--text)" }}>{paciente.nome}</p>
+              <p className="text-sm" style={{ color: "var(--text3)" }}>
+                {calcularIdade(paciente.data_nascimento)}
+                {paciente.sexo ? ` · ${paciente.sexo === "F" ? "Feminino" : "Masculino"}` : ""}
+                {" · RG "}{paciente.rg_hospitalar}
+              </p>
+            </div>
+            {/* Leito em destaque — dado mais importante */}
+            <div className="shrink-0 rounded-(--nc-radius-lg) px-4 py-2 text-center"
+              style={{ background: "var(--accent-dim)", border: "1px solid var(--border2)", minWidth: 90 }}>
+              <p className="text-[10px] font-bold uppercase" style={{ color: "var(--text3)" }}>Leito</p>
+              <p className="text-lg font-black" style={{ color: "var(--accent)", fontFamily: "var(--mono)" }}>
+                {internacao.enfermaria_leito || "—"}
+              </p>
+              <p className="text-[10px]" style={{ color: "var(--text3)" }}>
+                {internacao.setor.replace(/_/g, " ")}
+              </p>
             </div>
           </div>
-        )}
 
-        {paciente.creatinina_basal && (
-          <div className="mt-3 text-sm" style={{ color: "var(--text2)" }}>
-            Creatinina basal: <strong style={{ color: "var(--text)" }}>{paciente.creatinina_basal} mg/dL</strong>
-            {paciente.data_creatinina_basal && ` (${paciente.data_creatinina_basal})`}
-            {paciente.fonte_creatinina_basal && ` — ${paciente.fonte_creatinina_basal.replace(/_/g, " ")}`}
-          </div>
-        )}
-      </section>
+          {/* Comorbidades */}
+          {paciente.comorbidades.length > 0 && (
+            <div className="mb-3">
+              <p className="text-xs mb-1.5" style={{ color: "var(--text3)" }}>Comorbidades</p>
+              <div className="flex flex-wrap gap-1.5">
+                {paciente.comorbidades.map((c) => (
+                  <span key={c} className="nc-badge nc-badge-blue">{c.replace(/_/g, " ")}</span>
+                ))}
+              </div>
+            </div>
+          )}
 
-      {/* Diagnóstico nefrológico — editável */}
-      <section className="nc-card p-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold" style={{ color: "var(--text)" }}>Diagnóstico e conduta nefrológica</h3>
-          {!editando && (
-            <button
-              onClick={() => setEditando(true)}
-              className="text-xs font-semibold transition hover:opacity-70"
-              style={{ color: "var(--text3)" }}
-            >
-              Editar
-            </button>
+          {/* Creatinina basal */}
+          {paciente.creatinina_basal && (
+            <div className="rounded-(--nc-radius) px-3 py-2"
+              style={{ background: "var(--accent-dim)", border: "1px solid var(--border2)" }}>
+              <span className="text-xs" style={{ color: "var(--text3)" }}>Creatinina basal: </span>
+              <span className="text-sm font-bold" style={{ color: "var(--accent)", fontFamily: "var(--mono)" }}>
+                {paciente.creatinina_basal} mg/dL
+              </span>
+              {paciente.data_creatinina_basal && (
+                <span className="text-xs" style={{ color: "var(--text3)" }}> · {paciente.data_creatinina_basal}</span>
+              )}
+              {paciente.fonte_creatinina_basal && (
+                <span className="text-xs" style={{ color: "var(--text3)" }}> · {paciente.fonte_creatinina_basal.replace(/_/g, " ")}</span>
+              )}
+            </div>
           )}
         </div>
-
-        {editando ? (
-          <div className="mt-3 space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="nc-label">Diagnóstico principal</label>
-                <select
-                  value={diagnosticoPrincipal}
-                  onChange={(e) => setDiagnosticoPrincipal(e.target.value)}
-                  className="nc-input"
-                >
-                  <option value="">—</option>
-                  {DIAGNOSTICOS_PRINCIPAIS.map((d) => (
-                    <option key={d.value} value={d.value}>{d.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="nc-label">Etiologia</label>
-                <select
-                  value={etiologia}
-                  onChange={(e) => setEtiologia(e.target.value)}
-                  className="nc-input"
-                >
-                  <option value="">—</option>
-                  {ETIOLOGIAS_LRA.map((e) => (
-                    <option key={e} value={e}>{e.replace(/_/g, " ")}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="nc-label">Data início da LRA</label>
-                <input
-                  type="date" value={dataInicioLra} onChange={(e) => setDataInicioLra(e.target.value)}
-                  className="nc-input"
-                />
-              </div>
-              <div>
-                <label className="nc-label">Prioridade</label>
-                <select
-                  value={prioridade} onChange={(e) => setPrioridade(e.target.value)}
-                  className="nc-input"
-                >
-                  <option value="">—</option>
-                  <option value="Alta">Alta</option>
-                  <option value="Baixa">Baixa</option>
-                  <option value="Media">Média</option>
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label className="nc-label">Motivo da interconsulta</label>
-              <textarea
-                value={motivoInterconsulta} onChange={(e) => setMotivoInterconsulta(e.target.value)}
-                rows={2}
-                className="nc-input"
-              />
-            </div>
-
-            <div>
-              <label className="nc-label">Tags (separadas por vírgula)</label>
-              <input
-                type="text" value={tagsTexto} onChange={(e) => setTagsTexto(e.target.value)}
-                placeholder="Ex: Sepse, Cateter femoral, UTI"
-                className="nc-input"
-              />
-            </div>
-
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setEditando(false)} className="nc-btn nc-btn-ghost">
-                Cancelar
-              </button>
-              <button
-                onClick={handleSalvar} disabled={isPending}
-                className="nc-btn nc-btn-primary"
-              >
-                {isPending ? "Salvando..." : "Salvar"}
-              </button>
-            </div>
-          </div>
-        ) : (
-          <dl className="mt-3 space-y-2 text-sm">
-            <div>
-              <dt className="text-xs" style={{ color: "var(--text3)" }}>Diagnóstico principal</dt>
-              <dd style={{ color: "var(--text2)" }}>{acompanhamento.diagnostico_principal?.replace(/_/g, " ") || "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-xs" style={{ color: "var(--text3)" }}>Etiologia</dt>
-              <dd style={{ color: "var(--text2)" }}>{acompanhamento.etiologia?.replace(/_/g, " ") || "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-xs" style={{ color: "var(--text3)" }}>Motivo da interconsulta</dt>
-              <dd style={{ color: "var(--text2)" }}>{acompanhamento.motivo_interconsulta || "—"}</dd>
-            </div>
-            {acompanhamento.tags.length > 0 && (
-              <div>
-                <dt className="text-xs" style={{ color: "var(--text3)" }}>Tags</dt>
-                <dd className="mt-1 flex flex-wrap gap-1.5">
-                  {acompanhamento.tags.map((t) => (
-                    <span key={t} className="nc-badge nc-badge-blue">
-                      {t}
-                    </span>
-                  ))}
-                </dd>
-              </div>
-            )}
-          </dl>
-        )}
       </section>
 
-      {/* Dar baixa do acompanhamento */}
-      <section
-        className="rounded-(--nc-radius-lg) border p-4"
-        style={{ borderColor: "rgba(176,48,32,0.25)", background: "var(--red-dim)" }}
-      >
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold" style={{ color: "var(--text)" }}>Encerrar acompanhamento</h3>
-          {!mostrarBaixa && (
+      {/* ── Diagnóstico e conduta nefrológica ────────────────────────── */}
+      <section>
+        <SecaoHeader
+          label="Diagnóstico e conduta nefrológica"
+          action={
+            !editando ? (
+              <button
+                onClick={() => setEditando(true)}
+                className="cursor-pointer rounded-full px-3 py-1 text-xs font-bold transition hover:opacity-80"
+                style={{ background: "rgba(255,255,255,0.15)", color: "white", border: "1px solid rgba(255,255,255,0.25)" }}
+              >
+                ✏ Editar
+              </button>
+            ) : undefined
+          }
+        />
+        <div className="nc-card p-4">
+          {editando ? (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="nc-label">Diagnóstico principal</label>
+                  <select value={diagnosticoPrincipal} onChange={(e) => setDiagnosticoPrincipal(e.target.value)} className="nc-input cursor-pointer">
+                    <option value="">—</option>
+                    {DIAGNOSTICOS_PRINCIPAIS.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="nc-label">Etiologia</label>
+                  <select value={etiologia} onChange={(e) => setEtiologia(e.target.value)} className="nc-input cursor-pointer">
+                    <option value="">—</option>
+                    {ETIOLOGIAS_LRA.map((e) => <option key={e} value={e}>{e.replace(/_/g, " ")}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="nc-label">Data início da LRA</label>
+                  <input type="date" value={dataInicioLra} onChange={(e) => setDataInicioLra(e.target.value)} className="nc-input" />
+                </div>
+                <div>
+                  <label className="nc-label">Prioridade</label>
+                  <select value={prioridade} onChange={(e) => setPrioridade(e.target.value)} className="nc-input cursor-pointer">
+                    <option value="">—</option>
+                    <option value="Alta">Alta</option>
+                    <option value="Media">Média</option>
+                    <option value="Baixa">Baixa</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="nc-label">Motivo da interconsulta</label>
+                <textarea value={motivoInterconsulta} onChange={(e) => setMotivoInterconsulta(e.target.value)} rows={2} className="nc-input" />
+              </div>
+              <div>
+                <label className="nc-label">Tags (separadas por vírgula)</label>
+                <input type="text" value={tagsTexto} onChange={(e) => setTagsTexto(e.target.value)}
+                  placeholder="Ex: Sepse, Cateter femoral" className="nc-input" />
+              </div>
+              <div className="flex justify-end gap-2">
+                <button onClick={() => setEditando(false)} className="nc-btn nc-btn-ghost cursor-pointer">Cancelar</button>
+                <button onClick={handleSalvar} disabled={isPending} className="nc-btn nc-btn-primary cursor-pointer">
+                  {isPending ? "Salvando..." : "Salvar"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <dl className="space-y-3 text-sm">
+              <InfoRow label="Diagnóstico principal" value={acompanhamento.diagnostico_principal?.replace(/_/g, " ")} />
+              <InfoRow label="Etiologia" value={acompanhamento.etiologia?.replace(/_/g, " ")} />
+              <InfoRow label="Motivo da interconsulta" value={acompanhamento.motivo_interconsulta} />
+              {acompanhamento.tags.length > 0 && (
+                <div>
+                  <dt className="text-xs mb-1" style={{ color: "var(--text3)" }}>Tags</dt>
+                  <dd className="flex flex-wrap gap-1.5">
+                    {acompanhamento.tags.map((t) => <span key={t} className="nc-badge nc-badge-blue">{t}</span>)}
+                  </dd>
+                </div>
+              )}
+            </dl>
+          )}
+        </div>
+      </section>
+
+      {/* ── Encerrar acompanhamento ───────────────────────────────────── */}
+      <section>
+        <SecaoHeader label="Encerrar acompanhamento" />
+        <div className="nc-card overflow-hidden">
+          {/* Botão principal de dar baixa — clicável, com hover explícito */}
+          {!mostrarBaixa ? (
             <button
               onClick={() => setMostrarBaixa(true)}
-              className="text-xs font-semibold transition hover:opacity-70"
-              style={{ color: "var(--red)" }}
+              className="flex w-full cursor-pointer items-center justify-between px-4 py-3.5 transition"
+              style={{ background: "var(--red-dim)" }}
+              onMouseEnter={e => (e.currentTarget.style.background = "#fbd5d0")}
+              onMouseLeave={e => (e.currentTarget.style.background = "var(--red-dim)")}
             >
-              Dar baixa
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full"
+                  style={{ background: "var(--red)", color: "white", fontSize: 16 }}>
+                  ↓
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-bold" style={{ color: "var(--red)" }}>Dar baixa no acompanhamento</p>
+                  <p className="text-xs" style={{ color: "var(--text3)" }}>
+                    Registra motivo de alta e desfecho renal. Não pode ser desfeito.
+                  </p>
+                </div>
+              </div>
+              <span style={{ color: "var(--red)", fontSize: 18, opacity: 0.5 }}>›</span>
             </button>
+          ) : (
+            <div className="p-4 space-y-3" style={{ background: "var(--red-dim)" }}>
+              <p className="text-sm font-bold" style={{ color: "var(--red)" }}>Confirmar encerramento</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="nc-label">Motivo da alta</label>
+                  <select value={motivoAlta} onChange={(e) => setMotivoAlta(e.target.value)} className="nc-input cursor-pointer">
+                    <option value="">Selecione...</option>
+                    {MOTIVOS_ALTA.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="nc-label">Desfecho renal</label>
+                  <select value={desfechoRenal} onChange={(e) => setDesfechoRenal(e.target.value)} className="nc-input cursor-pointer">
+                    <option value="">Selecione...</option>
+                    {DESFECHOS_RENAIS.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
+                  </select>
+                </div>
+              </div>
+              {erro && <p className="text-sm" style={{ color: "var(--red)" }}>{erro}</p>}
+              <div className="flex justify-end gap-2">
+                <button onClick={() => { setMostrarBaixa(false); setErro(null); }} className="nc-btn nc-btn-ghost cursor-pointer">
+                  Cancelar
+                </button>
+                <button onClick={handleDarBaixa} disabled={isPending}
+                  className="nc-btn cursor-pointer" style={{ background: "var(--red)", color: "white" }}>
+                  {isPending ? "Confirmando..." : "Confirmar baixa"}
+                </button>
+              </div>
+            </div>
           )}
         </div>
-
-        {mostrarBaixa && (
-          <div className="mt-3 space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="nc-label">Motivo da alta</label>
-                <select
-                  value={motivoAlta} onChange={(e) => setMotivoAlta(e.target.value)}
-                  className="nc-input"
-                >
-                  <option value="">Selecione...</option>
-                  {MOTIVOS_ALTA.map((m) => (
-                    <option key={m.value} value={m.value}>{m.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="nc-label">Desfecho renal</label>
-                <select
-                  value={desfechoRenal} onChange={(e) => setDesfechoRenal(e.target.value)}
-                  className="nc-input"
-                >
-                  <option value="">Selecione...</option>
-                  {DESFECHOS_RENAIS.map((d) => (
-                    <option key={d.value} value={d.value}>{d.label}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {erro && <p className="text-sm" style={{ color: "var(--red)" }}>{erro}</p>}
-
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setMostrarBaixa(false)} className="nc-btn nc-btn-ghost">
-                Cancelar
-              </button>
-              <button
-                onClick={handleDarBaixa} disabled={isPending}
-                className="nc-btn"
-                style={{ background: "var(--red)", color: "white" }}
-              >
-                {isPending ? "Confirmando..." : "Confirmar baixa"}
-              </button>
-            </div>
-          </div>
-        )}
       </section>
 
-      {/* Modal de edição de paciente — reutiliza NovoPacienteModal em modo "edicao" */}
+      {/* Modal de edição */}
       {modalEdicaoAberto && (
         <NovoPacienteModal
           modo="edicao"
@@ -377,6 +342,15 @@ export function AbaResumo({ acompanhamento, paciente, internacao }: AbaResumoPro
           onSaved={() => setModalEdicaoAberto(false)}
         />
       )}
+    </div>
+  );
+}
+
+function InfoRow({ label, value }: { label: string; value?: string | null }) {
+  return (
+    <div>
+      <dt className="text-xs" style={{ color: "var(--text3)" }}>{label}</dt>
+      <dd className="mt-0.5" style={{ color: "var(--text2)" }}>{value || "—"}</dd>
     </div>
   );
 }

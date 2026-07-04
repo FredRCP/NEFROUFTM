@@ -46,9 +46,12 @@ const DIAGNOSTICO_LABEL: Record<string, string> = {
 };
 
 const SITUACAO_DIALITICA_CONFIG: Record<string, { label: string; cor: string; bg: string; emoji: string }> = {
-  hd_hoje: { label: "HD Hoje", cor: "var(--red)", bg: "var(--red-dim)", emoji: "🟥" },
-  hd_amanha: { label: "HD Amanhã", cor: "var(--amber)", bg: "var(--amber-dim)", emoji: "🟨" },
-  sem_hd_programada: { label: "Sem HD", cor: "var(--green)", bg: "var(--green-dim)", emoji: "🟩" },
+  hd_hoje:         { label: "HD Hoje",     cor: "var(--red)",    bg: "var(--red-dim)",    emoji: "🔴" },
+  hd_amanha:       { label: "HD Amanhã",   cor: "var(--amber)",  bg: "var(--amber-dim)",  emoji: "🟡" },
+  hd_continua:     { label: "HD Contínua", cor: "#7c3aed",       bg: "#f5f3ff",           emoji: "🔁" },
+  dpi:             { label: "DPI",         cor: "#0891b2",       bg: "#ecfeff",           emoji: "💧" },
+  tpe:             { label: "TPE",         cor: "#db2777",       bg: "#fdf2f8",           emoji: "🔬" },
+  sem_hd_programada: { label: "Sem HD",   cor: "var(--green)",  bg: "var(--green-dim)",  emoji: "🟢" },
 };
 
 export function PacienteCard({ acompanhamento, paciente, internacao, pendencias }: PacienteCardProps) {
@@ -72,7 +75,7 @@ export function PacienteCard({ acompanhamento, paciente, internacao, pendencias 
     });
   }
 
-  function handleSituacaoChange(novoValor: "hd_hoje" | "hd_amanha" | "sem_hd_programada") {
+  function handleSituacaoChange(novoValor: "hd_hoje" | "hd_amanha" | "sem_hd_programada" | "hd_continua" | "dpi" | "tpe") {
     setMostrarMenuHd(false);
     startTransition(() => {
       atualizarSituacaoDialitica(acompanhamento.id, novoValor);
@@ -121,12 +124,25 @@ export function PacienteCard({ acompanhamento, paciente, internacao, pendencias 
       tabIndex={0}
       onKeyDown={(e) => e.key === "Enter" && handleAbrirDetalhe()}
       title="Ver ficha completa"
-      className="flex cursor-pointer flex-col rounded-(--nc-radius-lg) p-3 transition hover:bg-(--card2) [--nc-card-pad:0.75rem] sm:aspect-[3/3.2] sm:p-2.5 sm:[--nc-card-pad:0.625rem]"
+      className="flex cursor-pointer flex-col rounded-(--nc-radius-lg) p-3 transition-all duration-150 [--nc-card-pad:0.75rem] sm:aspect-[3/3.2] sm:p-2.5 sm:[--nc-card-pad:0.625rem]"
       style={{
         background: "var(--card)",
         border: "1px solid var(--border)",
         borderLeft: `4px solid ${corBorda}`,
         boxShadow: "var(--nc-shadow-sm)",
+      }}
+      onMouseEnter={(e) => {
+        const el = e.currentTarget;
+        el.style.boxShadow = "var(--nc-shadow-md)";
+        el.style.borderColor = corBorda;
+        el.style.background = "var(--card2)";
+      }}
+      onMouseLeave={(e) => {
+        const el = e.currentTarget;
+        el.style.boxShadow = "var(--nc-shadow-sm)";
+        el.style.borderColor = "var(--border)";
+        el.style.background = "var(--card)";
+        el.style.borderLeft = `4px solid ${corBorda}`;
       }}
     >
       {/* Faixa fixa no topo — sempre visível, com 1 pílula clicável:
@@ -168,7 +184,7 @@ export function PacienteCard({ acompanhamento, paciente, internacao, pendencias 
             }}
             disabled={isPending}
             title={acompanhamento.avaliado_hoje ? "Avaliado hoje — clique para desmarcar" : "Clique para marcar como avaliado hoje"}
-            className="flex flex-1 items-center justify-center gap-1 px-2 py-2.5 text-[13px] font-extrabold transition active:scale-[0.97] sm:py-1.5 sm:text-[11px]"
+            className="flex flex-1 items-center justify-center gap-1 px-2 py-2.5 text-[13px] font-extrabold transition active:scale-[0.97] hover:opacity-90 sm:py-1.5 sm:text-[11px]"
             style={{
               background: acompanhamento.avaliado_hoje ? "var(--green)" : "var(--red)",
               color: "white",
@@ -176,9 +192,11 @@ export function PacienteCard({ acompanhamento, paciente, internacao, pendencias 
               boxShadow: "inset 0 -2px 0 rgba(0,0,0,0.12)",
             }}
           >
-            <span style={{ textDecoration: "underline", textDecorationStyle: "dotted", textUnderlineOffset: 2, opacity: 0.9 }}>
-              {acompanhamento.avaliado_hoje ? "✓ Avaliado" : "❗ Avaliar"}
-            </span>
+            {acompanhamento.avaliado_hoje ? (
+              <>✓ Avaliado <span style={{ opacity: 0.6, fontSize: 9 }}>· toque p/ desfazer</span></>
+            ) : (
+              <>👆 Avaliar agora</>
+            )}
           </button>
         )}
       </div>
@@ -279,7 +297,7 @@ export function PacienteCard({ acompanhamento, paciente, internacao, pendencias 
                 return (
                   <button
                     key={key}
-                    onClick={() => handleSituacaoChange(key as "hd_hoje" | "hd_amanha" | "sem_hd_programada")}
+                    onClick={() => handleSituacaoChange(key as "hd_hoje" | "hd_amanha" | "sem_hd_programada" | "hd_continua" | "dpi" | "tpe")}
                     className="flex w-full items-center gap-1.5 px-3 py-2 text-left text-xs font-semibold transition hover:opacity-80"
                     style={{ color: cfg.cor, background: key === acompanhamento.situacao_dialitica ? cfg.bg : "transparent" }}
                   >

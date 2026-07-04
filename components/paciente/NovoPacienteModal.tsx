@@ -334,6 +334,43 @@ export function NovoPacienteModal({
           {rgConfirmado && (
             <form onSubmit={handleSubmit} className="mt-5 space-y-5">
               <Section label="Dados do paciente">
+                {/* Leito em destaque — dado mais editado, fica no topo */}
+                <div
+                  className="mb-4 rounded-(--nc-radius-lg) p-3"
+                  style={{ background: "var(--accent-dim)", border: "1px solid var(--border2)" }}
+                >
+                  <label className="nc-label" style={{ color: "var(--accent)", marginBottom: 4 }}>
+                    🛏️ Leito <span style={{ color: "var(--red)" }}>*</span>
+                  </label>
+                  <select
+                    required value={leito} onChange={(e) => setLeito(e.target.value)}
+                    className={`${inputClass} cursor-pointer ${classeObrigatorio(camposObrigatoriosFaltando.leito)}`}
+                    style={{
+                      ...estiloObrigatorio(camposObrigatoriosFaltando.leito),
+                      fontWeight: leito ? 700 : 400,
+                      fontSize: 15,
+                    }}
+                  >
+                    <option value="">Selecione o leito...</option>
+                    {SETORES.map((s) => {
+                      const leitosDoSetor = CATALOGO_LEITOS.filter((l) => l.setor === s.value);
+                      if (leitosDoSetor.length === 0) return null;
+                      return (
+                        <optgroup key={s.value} label={s.label}>
+                          {leitosDoSetor.map((l) => (
+                            <option key={l.numero} value={l.numero}>{l.numero}</option>
+                          ))}
+                        </optgroup>
+                      );
+                    })}
+                  </select>
+                  {leito && (
+                    <p className="mt-1 text-xs" style={{ color: "var(--accent)" }}>
+                      Setor identificado automaticamente a partir do leito.
+                    </p>
+                  )}
+                </div>
+
                 <Row>
                   <Group label="Nome" required flex={2}>
                     <input
@@ -423,8 +460,8 @@ export function NovoPacienteModal({
               </Section>
 
               <Section label="Internação atual">
-                <Row>
-                  {!ehEdicao && (
+                {!ehEdicao && (
+                  <Row>
                     <Group label="Data de admissão" required>
                       <input
                         type="date" required value={dataAdmissao}
@@ -432,31 +469,8 @@ export function NovoPacienteModal({
                         className={inputClass}
                       />
                     </Group>
-                  )}
-                  <Group label="Leito" required flex={2}>
-                    <select
-                      required value={leito} onChange={(e) => setLeito(e.target.value)}
-                      className={`${inputClass} cursor-pointer ${classeObrigatorio(camposObrigatoriosFaltando.leito)}`}
-                      style={estiloObrigatorio(camposObrigatoriosFaltando.leito)}
-                    >
-                      <option value="">Selecione o leito...</option>
-                      {SETORES.map((s) => {
-                        const leitosDoSetor = CATALOGO_LEITOS.filter((l) => l.setor === s.value);
-                        if (leitosDoSetor.length === 0) return null;
-                        return (
-                          <optgroup key={s.value} label={s.label}>
-                            {leitosDoSetor.map((l) => (
-                              <option key={l.numero} value={l.numero}>{l.numero}</option>
-                            ))}
-                          </optgroup>
-                        );
-                      })}
-                    </select>
-                  </Group>
-                </Row>
-                <p className="mt-1 text-xs" style={{ color: "var(--text3)" }}>
-                  O setor e o grupo são identificados automaticamente a partir do leito.
-                </p>
+                  </Row>
+                )}
               </Section>
 
               {/* Seção de interconsulta — só no modo cadastro */}

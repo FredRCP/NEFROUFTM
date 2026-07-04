@@ -27,52 +27,84 @@ interface FichaPacienteProps {
 }
 
 export function FichaPaciente({
-  acompanhamento,
-  paciente,
-  internacao,
-  evolucoes,
-  usuarioId,
+  acompanhamento, paciente, internacao, evolucoes, usuarioId,
 }: FichaPacienteProps) {
   const [abaAtiva, setAbaAtiva] = useState<AbaId>("resumo");
 
   return (
-    <div>
-      <div className="nc-tab-bar overflow-x-auto px-3 sm:px-6">
+    // height: 100% herda o restante da viewport definido no page.tsx
+    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+
+      {/* Abas fixas */}
+      <div
+        style={{
+          flexShrink: 0,
+          background: "var(--card)",
+          borderBottom: "2px solid var(--border)",
+          display: "flex",
+          overflowX: "auto",
+          paddingLeft: 8,
+          paddingRight: 8,
+        }}
+      >
         {ABAS.map((aba) => (
           <button
             key={aba.id}
             onClick={() => setAbaAtiva(aba.id)}
-            className={`nc-tab ${abaAtiva === aba.id ? "active" : ""}`}
+            style={{
+              flexShrink: 0,
+              padding: "11px 16px",
+              fontSize: 13,
+              fontWeight: abaAtiva === aba.id ? 700 : 500,
+              color: abaAtiva === aba.id ? "var(--accent)" : "var(--text3)",
+              background: "none",
+              border: "none",
+              borderBottom: abaAtiva === aba.id ? "2px solid var(--accent)" : "2px solid transparent",
+              marginBottom: -2,
+              cursor: "pointer",
+              fontFamily: "var(--font)",
+              transition: "color 0.15s",
+              whiteSpace: "nowrap",
+            }}
           >
             {aba.label}
           </button>
         ))}
       </div>
 
-      <div className="p-3 sm:p-6">
+      {/* Conteúdo — scroll próprio, exceto Evoluções que gerencia o próprio layout */}
+      <div style={{ flex: 1, overflow: abaAtiva === "evolucoes" ? "hidden" : "auto" }}>
         {abaAtiva === "resumo" && (
-          <AbaResumo acompanhamento={acompanhamento} paciente={paciente} internacao={internacao} />
+          <div style={{ padding: "20px 24px" }}>
+            <AbaResumo acompanhamento={acompanhamento} paciente={paciente} internacao={internacao} />
+          </div>
         )}
         {abaAtiva === "evolucoes" && (
           <AbaEvolucoes
             acompanhamentoId={acompanhamento.id}
             evolucoes={evolucoes}
             usuarioId={usuarioId}
-            paciente={paciente}   // ← novo
+            paciente={paciente}
           />
         )}
         {abaAtiva === "exames" && (
-          <AbaExames acompanhamentoId={acompanhamento.id} paciente={paciente} />
+          <div style={{ padding: "20px 24px" }}>
+            <AbaExames acompanhamentoId={acompanhamento.id} paciente={paciente} />
+          </div>
         )}
         {abaAtiva === "dialise" && (
-  <AbaTerapiaDialitica
-    acompanhamento={acompanhamento}
-    paciente={paciente}
-    internacao={internacao}
-  />
-)}
+          <div style={{ padding: "20px 24px" }}>
+            <AbaTerapiaDialitica
+              acompanhamento={acompanhamento}
+              paciente={paciente}
+              internacao={internacao}
+            />
+          </div>
+        )}
         {abaAtiva === "timeline" && (
-          <AbaTimeline acompanhamento={acompanhamento} evolucoes={evolucoes} />
+          <div style={{ padding: "20px 24px" }}>
+            <AbaTimeline acompanhamento={acompanhamento} evolucoes={evolucoes} />
+          </div>
         )}
       </div>
     </div>

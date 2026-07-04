@@ -26,7 +26,7 @@ export async function marcarAvaliado(acompanhamentoId: string, valor: boolean) {
 
 export async function atualizarSituacaoDialitica(
   acompanhamentoId: string,
-  situacao: "hd_hoje" | "hd_amanha" | "sem_hd_programada"
+  situacao: "hd_hoje" | "hd_amanha" | "sem_hd_programada" | "hd_continua" | "dpi" | "tpe"
 ) {
   const supabase = await createClient();
 

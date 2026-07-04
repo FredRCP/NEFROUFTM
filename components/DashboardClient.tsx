@@ -89,6 +89,18 @@ export function DashboardClient() {
   const [busca, setBusca] = useState("");
   const [filtroIndicador, setFiltroIndicador] = useState<FiltroIndicador>("todos");
   const [modalAberto, setModalAberto] = useState(false);
+  // Accordion dos setores — todos expandidos por padrão.
+  // Estado NÃO persiste entre sessões (segurança: ao recarregar, tudo expande).
+  const [setoresRecolhidos, setSetoresRecolhidos] = useState<Set<string>>(new Set());
+
+  function toggleSetor(valor: string) {
+    setSetoresRecolhidos((prev) => {
+      const next = new Set(prev);
+      if (next.has(valor)) next.delete(valor);
+      else next.add(valor);
+      return next;
+    });
+  }
 
   const recarregar = useCallback(() => {
     buscarDados(supabase).then(setLinhas);
@@ -258,42 +270,54 @@ export function DashboardClient() {
         <div className="space-y-8">
           {GRANDES_GRUPOS.map((grupo) => {
             const linhasDoGrupo = ordenarPorLeito(linhasPorGrupo.get(grupo.value) || []);
-            const corGrupo = CORES_GRUPO[grupo.value] || CORES_GRUPO.default;
+            const recolhido = setoresRecolhidos.has(grupo.value);
             return (
               <div key={grupo.value}>
-                <div
-                  className="mb-3 flex items-center gap-2 rounded-md px-3 py-1.5"
-                  style={{ background: corGrupo.bg, border: `1px solid ${corGrupo.border}` }}
+                {/* Header clicável — accordion */}
+                <button
+                  onClick={() => toggleSetor(grupo.value)}
+                  className="mb-3 flex w-full cursor-pointer items-center gap-2.5 rounded-md px-3 py-2 transition hover:opacity-90 active:scale-[0.99]"
+                  style={{ background: "#1e3a5f", border: "none" }}
                 >
-                  <span className="text-xs font-bold uppercase tracking-wide" style={{ color: corGrupo.text, letterSpacing: "0.06em" }}>
+                  <span style={{ color: "white", fontSize: 12, opacity: 0.7, display: "inline-block", transform: recolhido ? "rotate(-90deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
+                    ▾
+                  </span>
+                  <span className="text-sm font-extrabold uppercase tracking-widest" style={{ color: "white", letterSpacing: "0.08em" }}>
                     {grupo.label}
                   </span>
-                  <span
-                    className="rounded-full px-1.5 py-0.5 text-[10px] font-bold"
-                    style={{ background: "rgba(255,255,255,0.6)", color: corGrupo.text }}
-                  >
+                  <span className="rounded-full px-2 py-0.5 text-[11px] font-bold"
+                    style={{ background: "rgba(255,255,255,0.18)", color: "white" }}>
                     {linhasDoGrupo.length}
                   </span>
-                </div>
-                {linhasDoGrupo.length === 0 ? (
-                  <div
-                    className="rounded-(--nc-radius) border border-dashed p-6 text-center text-sm"
-                    style={{ borderColor: "var(--border)", background: "var(--card)", color: "var(--text3)" }}
-                  >
-                    Nenhum paciente neste grupo.
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8">
-                    {linhasDoGrupo.map((linha) => (
-                      <PacienteCard
-                        key={linha.acompanhamento.id}
-                        acompanhamento={linha.acompanhamento}
-                        paciente={linha.paciente}
-                        internacao={linha.internacao}
-                        pendencias={linha.pendencias}
-                      />
-                    ))}
-                  </div>
+                  {recolhido && (
+                    <span className="ml-auto text-[11px]" style={{ color: "rgba(255,255,255,0.45)" }}>
+                      toque para expandir
+                    </span>
+                  )}
+                </button>
+
+                {/* Conteúdo colapsável */}
+                {!recolhido && (
+                  linhasDoGrupo.length === 0 ? (
+                    <div
+                      className="rounded-(--nc-radius) border border-dashed p-6 text-center text-sm"
+                      style={{ borderColor: "var(--border)", background: "var(--card)", color: "var(--text3)" }}
+                    >
+                      Nenhum paciente neste grupo.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 items-stretch sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8" style={{ gap: "12px" }}>
+                      {linhasDoGrupo.map((linha) => (
+                        <PacienteCard
+                          key={linha.acompanhamento.id}
+                          acompanhamento={linha.acompanhamento}
+                          paciente={linha.paciente}
+                          internacao={linha.internacao}
+                          pendencias={linha.pendencias}
+                        />
+                      ))}
+                    </div>
+                  )
                 )}
               </div>
             );
