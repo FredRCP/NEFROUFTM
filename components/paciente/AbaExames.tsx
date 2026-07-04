@@ -85,11 +85,11 @@ const CAMPOS: CampoConfig[] = [
 // Perfis por diagnóstico — filtra quais campos aparecer por padrão
 const PERFIS: Record<string, { label: string; icon: string; campos: CampoKey[] }> = {
   geral:          { label: "Geral",          icon: "🔬", campos: ["creatinina","ureia","potassio","sodio","hemoglobina","pcr","albumina","ph","bic"] },
-  ira:            { label: "IRA / UTI",      icon: "🚨", campos: ["creatinina","ureia","potassio","sodio","calcio","fosforo","hemoglobina","ph","bic","pco2","lactato","plaquetas","inr","pcr","albumina"] },
-  drc:            { label: "DRC",            icon: "🫘", campos: ["creatinina","ureia","potassio","sodio","calcio","fosforo","hemoglobina","rac","pth","vitamina_d","albumina","ph","bic","tsh","ldl","tg","glicemia","hba1c","ferro","ferritina","sat_transf"] },
-  dialise:        { label: "Diálise",        icon: "💉", campos: ["creatinina","ureia","potassio","sodio","calcio","fosforo","hemoglobina","pth","vitamina_d","albumina","ph","bic","ferro","ferritina","sat_transf","pcr"] },
+  ira:            { label: "IRA",      icon: "🚨", campos: ["creatinina","ureia","potassio","sodio","calcio","fosforo","hemoglobina","ph","bic","pco2","lactato","plaquetas","inr","pcr","albumina"] },
+  //drc:            { label: "DRC",            icon: "🫘", campos: ["creatinina","ureia","potassio","sodio","calcio","fosforo","hemoglobina","rac","pth","vitamina_d","albumina","ph","bic","tsh","ldl","tg","glicemia","hba1c","ferro","ferritina","sat_transf"] },
+  //dialise:        { label: "Diálise",        icon: "💉", campos: ["creatinina","ureia","potassio","sodio","calcio","fosforo","hemoglobina","pth","vitamina_d","albumina","ph","bic","ferro","ferritina","sat_transf","pcr"] },
   glomerulopatia: { label: "Glomerulopatia", icon: "🔴", campos: ["creatinina","ureia","potassio","sodio","calcio","fosforo","hemoglobina","rac","albumina","c3","c4","tgo","tgp","ldl","glicemia","tsh"] },
-  transplante:    { label: "Transplante",    icon: "✅", campos: ["creatinina","ureia","potassio","sodio","calcio","fosforo","hemoglobina","rac","albumina","glicemia","hba1c","ldl","tg","tsh","fa","tgo","tgp","pth","vitamina_d","pcr"] },
+  transplante:    { label: "Plasmaférese",    icon: "✅", campos: ["creatinina","ureia","potassio","sodio","calcio","fosforo","hemoglobina","rac","albumina","glicemia","hba1c","ldl","tg","tsh","fa","tgo","tgp","pth","vitamina_d","pcr"] },
 };
 
 // ─── Gráfico TFG com Canvas (faixas KDIGO) ───────────────────────────────────
