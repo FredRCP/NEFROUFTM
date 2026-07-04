@@ -9,7 +9,7 @@ export async function registrarDiurese(
   acompanhamentoId: string,
   data: string,
   volumeMl: number,
-  horas: 6 | 12 | 24 = 24
+  horas: number = 24
 ) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -26,7 +26,7 @@ export async function registrarDiurese(
 export async function editarDiurese(
   diureseId: string,
   volumeMl: number,
-  horas: 6 | 12 | 24
+  horas: number
 ) {
   const supabase = await createClient();
   const { error } = await supabase

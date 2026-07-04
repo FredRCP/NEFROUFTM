@@ -108,8 +108,9 @@ export async function resolverPendencia(pendenciaId: string) {
 
 /**
  * Evoluções: múltiplas por dia permitidas (Seção 4.4).
- * Edição/exclusão restrita ao autor — já garantido por RLS,
- * mas a action também confia nisso (erro do Supabase se violar).
+ * Edição/exclusão restrita ao autor — já garantido por RLS.
+ * Ao adicionar uma evolução, marca automaticamente o acompanhamento
+ * como avaliado hoje — o médico que evoluiu, avaliou.
  */
 export async function adicionarEvolucao(
   acompanhamentoId: string,
@@ -133,6 +134,14 @@ export async function adicionarEvolucao(
   if (error) {
     return { sucesso: false, erro: error.message };
   }
+
+  // Marca automaticamente como avaliado hoje ao salvar a evolução.
+  // Não bloqueia se falhar (a evolução já foi salva com sucesso).
+  await supabase
+    .from("acompanhamentos_nefro")
+    .update({ avaliado_hoje: true })
+    .eq("id", acompanhamentoId)
+    .eq("avaliado_hoje", false); // só atualiza se ainda não estava marcado
 
   revalidatePath("/dashboard");
   return { sucesso: true };

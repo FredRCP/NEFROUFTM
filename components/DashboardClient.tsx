@@ -14,12 +14,12 @@ interface LinhaDashboard {
   pendencias: Pendencia[];
 }
 
-/** Cores suaves por grande grupo (sugestão Chatiane) — tons harmônicos com a paleta azul do app. */
+/** Cor única baseada no azul do app para todos os grupos — visual mais limpo e coeso. */
 const CORES_GRUPO: Record<string, { bg: string; border: string; text: string }> = {
-  UTIs: { bg: "#fdecea", border: "#f3c6c0", text: "#a33a2b" },
-  Enfermarias: { bg: "#eef1f6", border: "#d4dce8", text: "#46607a" },
-  Pronto_Socorro: { bg: "#fef3e2", border: "#f0d9ad", text: "#9a4a0a" },
-  default: { bg: "var(--card2)", border: "var(--border)", text: "var(--text2)" },
+  UTIs:         { bg: "var(--accent-dim)", border: "var(--border2)", text: "var(--accent)" },
+  Enfermarias:  { bg: "var(--accent-dim)", border: "var(--border2)", text: "var(--accent)" },
+  Pronto_Socorro: { bg: "var(--accent-dim)", border: "var(--border2)", text: "var(--accent)" },
+  default:      { bg: "var(--accent-dim)", border: "var(--border2)", text: "var(--accent)" },
 };
 
 async function buscarDados(supabase: ReturnType<typeof createClient>): Promise<LinhaDashboard[]> {

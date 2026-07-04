@@ -58,12 +58,19 @@ export function FichaPaciente({
             acompanhamentoId={acompanhamento.id}
             evolucoes={evolucoes}
             usuarioId={usuarioId}
+            paciente={paciente}   // ← novo
           />
         )}
         {abaAtiva === "exames" && (
           <AbaExames acompanhamentoId={acompanhamento.id} paciente={paciente} />
         )}
-        {abaAtiva === "dialise" && <AbaTerapiaDialitica />}
+        {abaAtiva === "dialise" && (
+  <AbaTerapiaDialitica
+    acompanhamento={acompanhamento}
+    paciente={paciente}
+    internacao={internacao}
+  />
+)}
         {abaAtiva === "timeline" && (
           <AbaTimeline acompanhamento={acompanhamento} evolucoes={evolucoes} />
         )}
