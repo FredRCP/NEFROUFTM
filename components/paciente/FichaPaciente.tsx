@@ -35,14 +35,13 @@ export function FichaPaciente({
     // height: 100% herda o restante da viewport definido no page.tsx
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
 
-      {/* Abas fixas */}
+      {/* Abas fixas — sem scroll horizontal */}
       <div
         style={{
           flexShrink: 0,
           background: "var(--card)",
           borderBottom: "2px solid var(--border)",
           display: "flex",
-          overflowX: "auto",
           paddingLeft: 8,
           paddingRight: 8,
         }}
@@ -82,6 +81,7 @@ export function FichaPaciente({
         {abaAtiva === "evolucoes" && (
           <AbaEvolucoes
             acompanhamentoId={acompanhamento.id}
+            acompanhamento={acompanhamento}
             evolucoes={evolucoes}
             usuarioId={usuarioId}
             paciente={paciente}
@@ -89,7 +89,11 @@ export function FichaPaciente({
         )}
         {abaAtiva === "exames" && (
           <div style={{ padding: "20px 24px" }}>
-            <AbaExames acompanhamentoId={acompanhamento.id} paciente={paciente} />
+            <AbaExames
+              acompanhamentoId={acompanhamento.id}
+              paciente={paciente}
+              acompanhamento={acompanhamento}
+            />
           </div>
         )}
         {abaAtiva === "dialise" && (

@@ -1,29 +1,18 @@
 "use client";
 
-import { useState, useTransition, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useTransition } from "react";
 import {
   adicionarEvolucao, editarEvolucao, excluirEvolucao,
 } from "@/lib/actions/acompanhamentos";
-import {
-  registrarDiurese, editarDiurese, excluirDiurese, buscarDiureses,
-} from "@/lib/actions/pacientesExtra";
-import { createClient } from "@/lib/supabase/client";
-import type { Evolucao, Medico, Paciente } from "@/types/database";
+import { PainelDireito } from "@/components/paciente/PainelDireito";
+import type { Evolucao, Medico, Paciente, AcompanhamentoNefro } from "@/types/database";
 
 interface AbaEvolucoesProps {
   acompanhamentoId: string;
+  acompanhamento: AcompanhamentoNefro;
   evolucoes: (Evolucao & { autor: Medico })[];
   usuarioId: string;
   paciente: Paciente;
-}
-
-interface PontoDiurese {
-  id: string; data: string; volume_ml: number; horas: number;
-}
-
-interface ExameRow {
-  id: string; data: string;
-  parametros: { creatinina?: number|null; ureia?: number|null; potassio?: number|null; };
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -33,258 +22,13 @@ function fmtDtHora(iso: string) {
     day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit",
   });
 }
-function fmtDataCurta(iso: string) {
-  return new Date(iso + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
-}
 function isHoje(iso: string) {
-  const hoje = new Date().toISOString().slice(0, 10);
-  return iso.slice(0, 10) === hoje;
-}
-
-function calcTFG(cr: number, idade: number, sexo: string): number | null {
-  if (!cr || !idade) return null;
-  const k = sexo === "F" ? 0.7 : 0.9, a = sexo === "F" ? -0.241 : -0.302, sf = sexo === "F" ? 1.012 : 1.0;
-  const r = cr / k;
-  return Math.round(142 * Math.pow(Math.min(r,1), a) * Math.pow(Math.max(r,1), -1.2) * Math.pow(0.9938, idade) * sf);
-}
-
-function estagioTFG(tfg: number): { label: string; cor: string } {
-  if (tfg >= 90) return { label: "G1 ≥90", cor: "#16a34a" };
-  if (tfg >= 60) return { label: "G2 60–89", cor: "#16a34a" };
-  if (tfg >= 45) return { label: "G3a 45–59", cor: "#ca8a04" };
-  if (tfg >= 30) return { label: "G3b 30–44", cor: "#d97706" };
-  if (tfg >= 15) return { label: "G4 15–29", cor: "#ea580c" };
-  return { label: "G5 <15", cor: "#dc2626" };
-}
-
-function corCr(v: number) { return v >= 3.0 ? "var(--red)" : v >= 1.4 ? "var(--amber)" : "#16a34a"; }
-function corK(v: number) { return v >= 5.5 || v < 3.5 ? "var(--red)" : "#16a34a"; }
-function corUr(v: number) { return v > 100 ? "var(--red)" : v > 50 ? "var(--amber)" : "#16a34a"; }
-
-// ─── Coluna direita: TFG + exames + diurese ──────────────────────────────────
-
-function PainelDireito({
-  acompanhamentoId, paciente,
-}: { acompanhamentoId: string; paciente: Paciente }) {
-  const supabase = createClient();
-  const [exames, setExames] = useState<ExameRow[]>([]);
-  const [diureses, setDiureses] = useState<PontoDiurese[]>([]);
-  const [volume, setVolume] = useState("");
-  const [horas, setHoras] = useState("24");
-  const [salvando, setSalvando] = useState(false);
-  const [erro, setErro] = useState<string | null>(null);
-  const [editandoId, setEditandoId] = useState<string | null>(null);
-  const [editVol, setEditVol] = useState("");
-  const [editH, setEditH] = useState("24");
-  const dataDiurese = useMemo(() => new Date().toISOString().slice(0, 10), []);
-
-  const idade = useMemo(() => {
-    if (!paciente.data_nascimento) return 0;
-    const nasc = new Date(paciente.data_nascimento);
-    const hoje = new Date();
-    let a = hoje.getFullYear() - nasc.getFullYear();
-    if (hoje.getMonth() < nasc.getMonth() || (hoje.getMonth() === nasc.getMonth() && hoje.getDate() < nasc.getDate())) a--;
-    return a;
-  }, [paciente.data_nascimento]);
-
-  const carregarDiureses = useCallback(async () => {
-    const r = await buscarDiureses(acompanhamentoId);
-    if (r.sucesso) setDiureses(r.dados as PontoDiurese[]);
-  }, [acompanhamentoId]);
-
-  useEffect(() => {
-    let ativo = true;
-    supabase.from("exames").select("id,data,parametros")
-      .eq("acompanhamento_id", acompanhamentoId).order("data", { ascending: false }).limit(5)
-      .then(({ data }) => { if (ativo) setExames((data || []) as ExameRow[]); });
-    buscarDiureses(acompanhamentoId).then(r => { if (ativo && r.sucesso) setDiureses(r.dados as PontoDiurese[]); });
-    return () => { ativo = false; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [acompanhamentoId]);
-
-  // Último exame com dados
-  const ultimo = exames[0];
-  const cr = ultimo?.parametros?.creatinina ?? null;
-  const ur = ultimo?.parametros?.ureia ?? null;
-  const k  = ultimo?.parametros?.potassio ?? null;
-  const tfg = cr && paciente.sexo ? calcTFG(cr, idade, paciente.sexo) : null;
-  const est = tfg ? estagioTFG(tfg) : null;
-
-  async function handleRegistrar() {
-    const vol = parseInt(volume, 10), hrs = parseInt(horas, 10);
-    if (!volume || isNaN(vol) || vol < 0) { setErro("Volume inválido."); return; }
-    if (!horas || isNaN(hrs) || hrs <= 0 || hrs > 24) { setErro("Horas: 1–24."); return; }
-    setErro(null); setSalvando(true);
-    const r = await registrarDiurese(acompanhamentoId, dataDiurese, vol, hrs);
-    setSalvando(false);
-    if (r.sucesso) { setVolume(""); setHoras("24"); carregarDiureses(); }
-    else setErro(r.erro || "Erro.");
-  }
-
-  async function handleSalvarEdicao() {
-    if (!editandoId) return;
-    const vol = parseInt(editVol, 10), hrs = parseInt(editH, 10);
-    if (isNaN(vol) || isNaN(hrs)) return;
-    await editarDiurese(editandoId, vol, hrs);
-    setEditandoId(null); carregarDiureses();
-  }
-
-  async function handleExcluir(id: string) {
-    if (!confirm("Excluir?")) return;
-    await excluirDiurese(id); carregarDiureses();
-  }
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
-
-      {/* ── TFG + Exames ── */}
-      <div style={{ flexShrink: 0, padding: "12px 12px 8px" }}>
-
-        {/* TFG em destaque */}
-        {tfg && est ? (
-          <div style={{ borderRadius: "var(--nc-radius)", padding: "10px 12px", marginBottom: 10, background: est.cor + "12", border: `1px solid ${est.cor}30`, textAlign: "center" }}>
-            <p style={{ fontSize: 10, fontWeight: 700, color: "var(--text3)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 2 }}>TFG — CKD-EPI 2021</p>
-            <p style={{ fontSize: 28, fontWeight: 900, color: est.cor, fontFamily: "var(--mono)", lineHeight: 1 }}>
-              {tfg}
-              <span style={{ fontSize: 11, fontWeight: 400, color: "var(--text3)", marginLeft: 3 }}>mL/min</span>
-            </p>
-            <p style={{ fontSize: 11, fontWeight: 700, color: est.cor, marginTop: 2 }}>DRC {est.label}</p>
-          </div>
-        ) : (
-          <div style={{ borderRadius: "var(--nc-radius)", padding: "10px 12px", marginBottom: 10, background: "var(--card2)", border: "1px solid var(--border)", textAlign: "center" }}>
-            <p style={{ fontSize: 10, color: "var(--text3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>TFG — CKD-EPI 2021</p>
-            <p style={{ fontSize: 18, fontWeight: 900, color: "var(--text3)", fontFamily: "var(--mono)" }}>—</p>
-            <p style={{ fontSize: 10, color: "var(--text3)" }}>Registre um exame com creatinina</p>
-          </div>
-        )}
-
-        {/* Exames essenciais */}
-        <p style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--text3)", marginBottom: 6 }}>Último exame {ultimo ? `· ${fmtDataCurta(ultimo.data)}` : ""}</p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          {[
-            { label: "Creatinina", valor: cr, unidade: "mg/dL", cor: cr ? corCr(cr) : undefined },
-            { label: "Ureia",      valor: ur, unidade: "mg/dL", cor: ur ? corUr(ur) : undefined },
-            { label: "Potássio",   valor: k,  unidade: "mEq/L", cor: k  ? corK(k)  : undefined },
-          ].map(({ label, valor, unidade, cor }) => (
-            <div key={label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "5px 10px", borderRadius: "var(--nc-radius)", background: "var(--card2)", border: "1px solid var(--border)" }}>
-              <span style={{ fontSize: 11, color: "var(--text3)", fontWeight: 600 }}>{label}</span>
-              <span style={{ fontSize: 14, fontWeight: 800, fontFamily: "var(--mono)", color: cor || "var(--text3)" }}>
-                {valor != null ? valor : "—"}
-                {valor != null && <span style={{ fontSize: 9, fontWeight: 400, color: "var(--text3)", marginLeft: 2 }}>{unidade}</span>}
-              </span>
-            </div>
-          ))}
-        </div>
-
-        {/* Histórico dos últimos registros */}
-        {exames.length > 1 && (
-          <div style={{ marginTop: 6 }}>
-            <p style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--text3)", marginBottom: 4 }}>Histórico Cr</p>
-            {exames.slice(1, 4).map(e => {
-              const eCr = e.parametros?.creatinina;
-              if (!eCr) return null;
-              return (
-                <div key={e.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "3px 8px", borderRadius: 4, marginBottom: 2, background: "var(--bg2)" }}>
-                  <span style={{ fontSize: 10, color: "var(--text3)" }}>{fmtDataCurta(e.data)}</span>
-                  <span style={{ fontSize: 12, fontWeight: 700, fontFamily: "var(--mono)", color: corCr(eCr) }}>{eCr}</span>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Divisor */}
-      <div style={{ height: 1, background: "var(--border)", flexShrink: 0, margin: "0 12px" }} />
-
-      {/* ── Diurese ── */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "8px 12px 12px" }}>
-        <p style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--text3)", marginBottom: 8 }}>Diurese</p>
-
-        {/* Último registro em destaque */}
-        {diureses.length > 0 && (() => {
-          const ult = [...diureses].reverse()[0];
-          return (
-            <div style={{ borderRadius: "var(--nc-radius)", padding: "8px 10px", marginBottom: 8, background: "var(--accent-dim)", border: "1px solid var(--border2)" }}>
-              <p style={{ fontSize: 9, color: "var(--text3)", marginBottom: 2 }}>Último registro · {fmtDataCurta(ult.data)}</p>
-              <p style={{ fontSize: 22, fontWeight: 900, fontFamily: "var(--mono)", color: "var(--accent)", lineHeight: 1 }}>
-                {ult.volume_ml}
-                <span style={{ fontSize: 11, fontWeight: 400, color: "var(--text3)", marginLeft: 3 }}>ml / {ult.horas}h</span>
-              </p>
-            </div>
-          );
-        })()}
-
-        {/* Formulário rápido */}
-        <div style={{ display: "flex", gap: 4, alignItems: "flex-end", marginBottom: 4 }}>
-          <div style={{ flex: 1 }}>
-            <p style={{ fontSize: 9, color: "var(--text3)", marginBottom: 2 }}>Volume (ml)</p>
-            <input type="number" min="0" step="10" value={volume}
-              onChange={e => setVolume(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && handleRegistrar()}
-              placeholder="Ex: 800"
-              style={{ width: "100%", padding: "5px 8px", fontSize: 13, fontFamily: "var(--font)", border: "1.5px solid var(--border)", borderRadius: "var(--nc-radius)", background: "var(--card)", color: "var(--text)", outline: "none" }}
-            />
-          </div>
-          <div style={{ width: 44 }}>
-            <p style={{ fontSize: 9, color: "var(--text3)", marginBottom: 2 }}>Horas</p>
-            <input type="number" min="1" max="24" value={horas}
-              onChange={e => setHoras(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && handleRegistrar()}
-              style={{ width: "100%", padding: "5px 6px", fontSize: 13, fontFamily: "var(--font)", border: "1.5px solid var(--border)", borderRadius: "var(--nc-radius)", background: "var(--card)", color: "var(--text)", outline: "none" }}
-            />
-          </div>
-          <button onClick={handleRegistrar} disabled={salvando || !volume}
-            style={{ padding: "7px 10px", background: "var(--accent)", color: "white", border: "none", borderRadius: "var(--nc-radius)", fontSize: 14, fontWeight: 700, cursor: "pointer", opacity: salvando || !volume ? 0.5 : 1, fontFamily: "var(--font)", flexShrink: 0 }}>
-            ✓
-          </button>
-        </div>
-        {erro && <p style={{ fontSize: 10, color: "var(--red)", marginBottom: 4 }}>{erro}</p>}
-
-        {/* Histórico de diureses */}
-        {diureses.length > 0 && (
-          <div style={{ marginTop: 6 }}>
-            {[...diureses].reverse().slice(0, 6).map(d => {
-              const emEdicao = editandoId === d.id;
-              return (
-                <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 6px", borderBottom: "1px solid var(--border)", fontSize: 11 }}>
-                  {emEdicao ? (
-                    <>
-                      <input type="number" value={editVol} onChange={e => setEditVol(e.target.value)}
-                        style={{ width: 52, padding: "2px 4px", fontSize: 11, border: "1px solid var(--border)", borderRadius: 4, fontFamily: "var(--font)" }} />
-                      <span style={{ color: "var(--text3)" }}>ml/</span>
-                      <input type="number" value={editH} onChange={e => setEditH(e.target.value)}
-                        style={{ width: 32, padding: "2px 4px", fontSize: 11, border: "1px solid var(--border)", borderRadius: 4, fontFamily: "var(--font)" }} />
-                      <span style={{ color: "var(--text3)" }}>h</span>
-                      <button onClick={handleSalvarEdicao} style={{ marginLeft: "auto", background: "var(--accent)", color: "white", border: "none", borderRadius: 4, padding: "2px 6px", fontSize: 10, cursor: "pointer" }}>✓</button>
-                      <button onClick={() => setEditandoId(null)} style={{ background: "none", border: "none", color: "var(--text3)", cursor: "pointer", fontSize: 11 }}>✕</button>
-                    </>
-                  ) : (
-                    <>
-                      <span style={{ color: "var(--text3)", minWidth: 36 }}>{fmtDataCurta(d.data)}</span>
-                      <span style={{ fontWeight: 700, color: "var(--accent)", fontFamily: "var(--mono)" }}>{d.volume_ml}</span>
-                      <span style={{ color: "var(--text3)" }}>ml/{d.horas}h</span>
-                      <div style={{ marginLeft: "auto", display: "flex", gap: 2 }}>
-                        <button onClick={() => { setEditandoId(d.id); setEditVol(String(d.volume_ml)); setEditH(String(d.horas)); }}
-                          style={{ background: "none", border: "none", color: "var(--text3)", cursor: "pointer", fontSize: 11 }}>✏</button>
-                        <button onClick={() => handleExcluir(d.id)}
-                          style={{ background: "none", border: "none", color: "var(--text3)", cursor: "pointer", fontSize: 11 }}>✕</button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    </div>
-  );
+  return iso.slice(0, 10) === new Date().toISOString().slice(0, 10);
 }
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 
-export function AbaEvolucoes({ acompanhamentoId, evolucoes, usuarioId, paciente }: AbaEvolucoesProps) {
+export function AbaEvolucoes({ acompanhamentoId, acompanhamento, evolucoes, usuarioId, paciente }: AbaEvolucoesProps) {
   const [isPending, startTransition] = useTransition();
   const [evolucaoSelecionada, setEvolucaoSelecionada] = useState<(Evolucao & { autor: Medico }) | null>(evolucoes[0] ?? null);
   const [modoEdicao, setModoEdicao] = useState(false);
@@ -354,7 +98,7 @@ export function AbaEvolucoes({ acompanhamentoId, evolucoes, usuarioId, paciente 
   return (
     <div style={{
       display: "grid",
-      gridTemplateColumns: "240px 1fr 240px",
+      gridTemplateColumns: "260px 1fr 260px",
       height: "100%",
       overflow: "hidden",
     }}>
@@ -454,7 +198,19 @@ export function AbaEvolucoes({ acompanhamentoId, evolucoes, usuarioId, paciente 
                 )}
               </div>
               {ehAutor && (
-                <div style={{ display: "flex", gap: 10 }}>
+                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  {/* Copiar — disponível para todos (não só autor) */}
+                  <button
+                    onClick={async () => {
+                      try { await navigator.clipboard.writeText(evolucaoSelecionada.texto); }
+                      catch { /* ignora */ }
+                    }}
+                    title="Copiar texto"
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", fontSize: 15, padding: "2px 4px", borderRadius: 4, transition: "color 0.15s" }}
+                    onMouseEnter={e => (e.currentTarget.style.color = "var(--accent)")}
+                    onMouseLeave={e => (e.currentTarget.style.color = "var(--text3)")}
+                  >⧉</button>
+
                   {modoEdicao ? (
                     <>
                       <button onClick={() => setModoEdicao(false)} className="nc-btn nc-btn-ghost" style={{ fontSize: 12, padding: "4px 10px" }}>Cancelar</button>
@@ -464,10 +220,22 @@ export function AbaEvolucoes({ acompanhamentoId, evolucoes, usuarioId, paciente 
                     </>
                   ) : (
                     <>
-                      <button onClick={() => { setTextoEditor(evolucaoSelecionada.texto); setModoEdicao(true); }}
-                        style={{ fontSize: 12, color: "var(--text2)", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font)" }}>Editar</button>
-                      <button onClick={handleExcluir}
-                        style={{ fontSize: 12, color: "var(--red)", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font)" }}>Excluir</button>
+                      {/* Lápis */}
+                      <button
+                        onClick={() => { setTextoEditor(evolucaoSelecionada.texto); setModoEdicao(true); }}
+                        title="Editar"
+                        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", fontSize: 15, padding: "2px 4px", borderRadius: 4, transition: "color 0.15s" }}
+                        onMouseEnter={e => (e.currentTarget.style.color = "var(--accent)")}
+                        onMouseLeave={e => (e.currentTarget.style.color = "var(--text3)")}
+                      >✏</button>
+                      {/* Lixo */}
+                      <button
+                        onClick={handleExcluir}
+                        title="Excluir"
+                        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", fontSize: 15, padding: "2px 4px", borderRadius: 4, transition: "color 0.15s" }}
+                        onMouseEnter={e => (e.currentTarget.style.color = "var(--red)")}
+                        onMouseLeave={e => (e.currentTarget.style.color = "var(--text3)")}
+                      >🗑</button>
                     </>
                   )}
                 </div>
@@ -493,9 +261,13 @@ export function AbaEvolucoes({ acompanhamentoId, evolucoes, usuarioId, paciente 
         )}
       </div>
 
-      {/* ── COLUNA DIREITA: TFG + exames + diurese ───────────────────── */}
-      <div style={{ overflow: "hidden", background: "var(--card2)", borderLeft: "1px solid var(--border)" }}>
-        <PainelDireito acompanhamentoId={acompanhamentoId} paciente={paciente} />
+      {/* ── COLUNA DIREITA: diurese + TFG + exames ───────────────────── */}
+      <div style={{ overflow: "hidden", background: "var(--card)", borderLeft: "1px solid var(--border)" }}>
+        <PainelDireito
+          acompanhamentoId={acompanhamentoId}
+          paciente={paciente}
+          acompanhamento={acompanhamento}
+        />
       </div>
     </div>
   );
