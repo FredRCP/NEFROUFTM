@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
 import type { Paciente, AcompanhamentoNefro } from "@/types/database";
 import { ExportarExames } from "./ExportarExames";
@@ -287,7 +288,18 @@ export function AbaExames({ acompanhamentoId, paciente, acompanhamento }: AbaExa
     setCarregando(false);
   }, [acompanhamentoId, supabase]);
 
-  useEffect(() => { carregarRegistros(); }, [carregarRegistros]);
+  useEffect(() => {
+    let ativo = true;
+    supabase.from("exames").select("*")
+      .eq("acompanhamento_id", acompanhamentoId)
+      .order("data", { ascending: true })
+      .then(({ data }) => {
+        if (!ativo) return;
+        setRegistros((data || []) as RegistroExame[]);
+        setCarregando(false);
+      });
+    return () => { ativo = false; };
+  }, [acompanhamentoId, supabase]);
 
   const perfil = PERFIS[perfilAtivo];
 
@@ -405,7 +417,8 @@ export function AbaExames({ acompanhamentoId, paciente, acompanhamento }: AbaExa
               📊 Ver / Exportar
             </button>
           )}
-          <button onClick={abrirNovo} className="nc-btn nc-btn-primary cursor-pointer" style={{ padding: "6px 14px" }}>
+          <button onClick={() => { setShowExportar(false); abrirNovo(); }}
+              className="nc-btn nc-btn-primary cursor-pointer" style={{ padding: "6px 14px" }}>
             + Novo registro
           </button>
         </div>
@@ -416,21 +429,20 @@ export function AbaExames({ acompanhamentoId, paciente, acompanhamento }: AbaExa
         <div>
           {/* TFG em destaque */}
           {ultimoTFG !== null && (
-            <div style={{ borderRadius: "var(--nc-radius-lg)", padding: "12px 16px", marginBottom: 12, background: isIRA ? "var(--card2)" : estUltimo.bg, border: `1.5px solid ${isIRA ? "var(--border)" : estUltimo.cor + "40"}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ borderRadius: "var(--nc-radius-lg)", padding: "12px 16px", marginBottom: 12, background: estUltimo.bg, border: `1.5px solid ${estUltimo.cor}40`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div>
-                <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: isIRA ? "var(--text3)" : estUltimo.cor, margin: "0 0 2px" }}>TFG-e · CKD-EPI 2021</p>
-                <p style={{ fontSize: 36, fontWeight: 900, fontFamily: "var(--mono)", color: isIRA ? "var(--text)" : estUltimo.cor, lineHeight: 1, margin: 0 }}>
+                <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: estUltimo.cor, margin: "0 0 2px" }}>TFG-e · CKD-EPI 2021</p>
+                <p style={{ fontSize: 36, fontWeight: 900, fontFamily: "var(--mono)", color: estUltimo.cor, lineHeight: 1, margin: 0 }}>
                   {ultimoTFG}
                   <span style={{ fontSize: 13, fontWeight: 400, color: "var(--text3)", marginLeft: 6 }}>mL/min/1,73m²</span>
                 </p>
-                {/* Classificação DRC só para não-IRA */}
                 {!isIRA && (
                   <p style={{ fontSize: 13, fontWeight: 700, color: estUltimo.cor, margin: "4px 0 0" }}>DRC {estUltimo.label}</p>
                 )}
               </div>
               {tfgSerie.length >= 2 && (
                 <div style={{ width: 120, opacity: 0.7 }}>
-                  <MiniGrafico valores={tfgSerie} datas={tfgDatas} cor={isIRA ? "var(--accent)" : estUltimo.cor} label="TFG" unidade="" />
+                  <MiniGrafico valores={tfgSerie} datas={tfgDatas} cor={estUltimo.cor} label="TFG" unidade="" />
                 </div>
               )}
             </div>
@@ -483,7 +495,7 @@ export function AbaExames({ acompanhamentoId, paciente, acompanhamento }: AbaExa
         ];
 
         return (
-          <div className="nc-card overflow-hidden">
+          <div className="nc-card overflow-hidden" style={{ isolation: "isolate" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px", borderBottom: "1px solid var(--border)" }}>
               <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--text3)", margin: 0 }}>
                 Histórico comparativo
@@ -493,11 +505,11 @@ export function AbaExames({ acompanhamentoId, paciente, acompanhamento }: AbaExa
               <table style={{ borderCollapse: "collapse", fontSize: 12, minWidth: "100%" }}>
                 <thead>
                   <tr style={{ background: "#1e3a5f" }}>
-                    <th style={{ padding: "7px 12px", textAlign: "left", color: "rgba(255,255,255,0.7)", fontSize: 10, fontWeight: 700, whiteSpace: "nowrap", position: "sticky", left: 0, background: "#1e3a5f", zIndex: 1 }}>
+                    <th style={{ padding: "6px 8px", textAlign: "left", color: "rgba(255,255,255,0.7)", fontSize: 10, fontWeight: 700, whiteSpace: "nowrap", position: "sticky", left: 0, background: "#1e3a5f", zIndex: 1 }}>
                       Exame
                     </th>
                     {regsOrdenados.map(r => (
-                      <th key={r.id} style={{ padding: "7px 12px", textAlign: "center", color: "white", fontSize: 10, fontWeight: 700, whiteSpace: "nowrap", minWidth: 80 }}>
+                      <th key={r.id} style={{ padding: "6px 8px", textAlign: "center", color: "white", fontSize: 10, fontWeight: 700, whiteSpace: "nowrap", minWidth: 68 }}>
                         {fmtDt(r.data)}
                       </th>
                     ))}
@@ -509,7 +521,7 @@ export function AbaExames({ acompanhamentoId, paciente, acompanhamento }: AbaExa
                 <tbody>
                   {camposTabela.map(({ k, l, isTFG }) => (
                     <tr key={k} style={{ borderBottom: "1px solid var(--border)" }}>
-                      <td style={{ padding: "6px 12px", fontWeight: 700, color: "var(--text2)", whiteSpace: "nowrap", fontSize: 11, position: "sticky", left: 0, background: "var(--card2)", zIndex: 1 }}>
+                      <td style={{ padding: "5px 8px", fontWeight: 700, color: "var(--text2)", whiteSpace: "nowrap", fontSize: 11, position: "sticky", left: 0, background: "var(--card2)", zIndex: 1 }}>
                         {l}
                       </td>
                       {regsOrdenados.map(r => {
@@ -518,14 +530,14 @@ export function AbaExames({ acompanhamentoId, paciente, acompanhamento }: AbaExa
                         if (isTFG) {
                           const cr = r.parametros.creatinina as number | null;
                           v = cr ? (ckdEpi2021(cr, idade, sexo) ?? null) : null;
-                          if (v !== null) cor = isIRA ? "var(--text)" : estagioTFG(v).cor;
+                          if (v !== null) cor = estagioTFG(v).cor;
                         } else {
                           v = r.parametros[k] as number | null;
                           const cfg = CAMPOS_NUMERICOS.find(c => c.k === k);
                           if (v != null && cfg) cor = corValor(v, cfg.normal, cfg.alerta);
                         }
                         return (
-                          <td key={r.id} style={{ padding: "6px 12px", textAlign: "center", fontFamily: "var(--mono)", fontWeight: 700, fontSize: 12, color: v != null ? cor : "var(--text3)" }}>
+                          <td key={r.id} style={{ padding: "5px 8px", textAlign: "center", fontFamily: "var(--mono)", fontWeight: 700, fontSize: 12, color: v != null ? cor : "var(--text3)" }}>
                             {v ?? "—"}
                           </td>
                         );
@@ -537,12 +549,12 @@ export function AbaExames({ acompanhamentoId, paciente, acompanhamento }: AbaExa
                 {/* Linha de ações */}
                 <tfoot>
                   <tr style={{ borderTop: "2px solid var(--border)", background: "var(--card2)" }}>
-                    <td style={{ padding: "5px 12px", fontSize: 10, color: "var(--text3)", fontWeight: 600, position: "sticky", left: 0, background: "var(--card2)", zIndex: 1 }}>
+                    <td style={{ padding: "4px 8px", fontSize: 10, color: "var(--text3)", fontWeight: 600, position: "sticky", left: 0, background: "var(--card2)", zIndex: 1 }}>
                       Ações
                     </td>
                     {regsOrdenados.map(r => (
-                      <td key={r.id} style={{ padding: "5px 12px", textAlign: "center" }}>
-                        <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+                      <td key={r.id} style={{ padding: "4px 8px", textAlign: "center" }}>
+                        <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
                           <button onClick={() => abrirEditar(r)} title="Editar" style={{ background: "none", border: "none", color: "var(--text2)", cursor: "pointer", fontSize: 13 }}>✏</button>
                           <button onClick={() => excluir(r.id)} title="Excluir" style={{ background: "none", border: "none", color: "var(--red)", cursor: "pointer", fontSize: 13 }}>🗑</button>
                         </div>
@@ -557,10 +569,10 @@ export function AbaExames({ acompanhamentoId, paciente, acompanhamento }: AbaExa
         );
       })()}
 
-      {/* Modal novo/editar */}
-      {showModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4"
-          style={{ background: "rgba(0,0,0,0.5)" }}
+      {/* Modal novo/editar — via portal para escapar do overflow:hidden */}
+      {showModal && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-index: 300 flex items-center justify-center p-2 sm:p-4"
+          style={{ background: "rgba(0,0,0,0.55)" }}
           onClick={e => { if (e.target === e.currentTarget) setShowModal(false); }}>
           <div className="flex max-h-[95vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl"
             style={{ background: "var(--card)", boxShadow: "0 24px 64px rgba(0,0,0,0.25)" }}>
@@ -700,7 +712,7 @@ export function AbaExames({ acompanhamentoId, paciente, acompanhamento }: AbaExa
                   </button>
                 </div>
                 <p style={{ fontSize: 10, color: "var(--text3)", marginTop: 4 }}>
-                  Pressione Enter ou clique em "+ Adicionar" para incluir cada exame na lista.
+                  Pressione Enter ou clique em + Adicionar para incluir cada exame na lista.
                 </p>
               </div>
             </div>
@@ -716,17 +728,19 @@ export function AbaExames({ acompanhamentoId, paciente, acompanhamento }: AbaExa
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* Modal de exportar / visualizar */}
-      {showExportar && (
+      {/* Modal de exportar — via portal para escapar do overflow:hidden */}
+      {showExportar && !showModal && typeof document !== "undefined" && createPortal(
         <ExportarExames
           registros={registros}
           paciente={paciente}
           acompanhamento={acompanhamento}
           onClose={() => setShowExportar(false)}
-        />
+        />,
+        document.body
       )}
     </div>
   );

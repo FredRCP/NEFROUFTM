@@ -246,35 +246,39 @@ export function PainelDireito({ acompanhamentoId, paciente, acompanhamento }: Pa
         <GraficoDiurese dados={diureses} />
 
         {/* Formulário — data editável */}
-        <div style={{ marginTop: 8, display: "flex", gap: 4, alignItems: "flex-end" }}>
-          <div style={{ flex: 1 }}>
-            <p style={{ fontSize: 9, color: "var(--text3)", margin: "0 0 2px" }}>Data</p>
-            <input type="date" value={dataDiurese}
-              onChange={e => setDataDiurese(e.target.value)}
-              style={{ ...inputStyle }}
-            />
+        <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+          <div style={{ display: "flex", gap: 6 }}>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: 9, color: "var(--accent)", fontWeight: 700, margin: "0 0 3px" }}>Data</p>
+              <input type="date" value={dataDiurese}
+                onChange={e => setDataDiurese(e.target.value)}
+                style={{ ...inputStyle }}
+              />
+            </div>
           </div>
-          <div style={{ width: 60 }}>
-            <p style={{ fontSize: 9, color: "var(--text3)", margin: "0 0 2px" }}>ml</p>
-            <input type="number" min="0" step="10" value={volume}
-              onChange={e => setVolume(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && handleRegistrar()}
-              placeholder="800"
-              style={{ ...inputStyle }}
-            />
+          <div style={{ display: "flex", gap: 6, alignItems: "flex-end" }}>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: 9, color: "var(--accent)", fontWeight: 700, margin: "0 0 3px" }}>Volume (ml)</p>
+              <input type="number" min="0" step="10" value={volume}
+                onChange={e => setVolume(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handleRegistrar()}
+                placeholder="Ex: 800"
+                style={{ ...inputStyle, fontSize: 14 }}
+              />
+            </div>
+            <div style={{ width: 64 }}>
+              <p style={{ fontSize: 9, color: "var(--accent)", fontWeight: 700, margin: "0 0 3px" }}>Horas</p>
+              <input type="number" min="1" max="24" value={horas}
+                onChange={e => setHoras(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handleRegistrar()}
+                style={{ ...inputStyle, fontSize: 14 }}
+              />
+            </div>
+            <button onClick={handleRegistrar} disabled={salvando || !volume}
+              style={{ padding: "8px 12px", background: "var(--accent)", color: "white", border: "none", borderRadius: "var(--nc-radius)", fontSize: 16, fontWeight: 700, cursor: "pointer", opacity: salvando || !volume ? 0.5 : 1, fontFamily: "var(--font)", flexShrink: 0 }}>
+              ✓
+            </button>
           </div>
-          <div style={{ width: 44 }}>
-            <p style={{ fontSize: 9, color: "var(--text3)", margin: "0 0 2px" }}>horas</p>
-            <input type="number" min="1" max="24" value={horas}
-              onChange={e => setHoras(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && handleRegistrar()}
-              style={{ ...inputStyle }}
-            />
-          </div>
-          <button onClick={handleRegistrar} disabled={salvando || !volume}
-            style={{ padding: "6px 10px", background: "var(--accent)", color: "white", border: "none", borderRadius: "var(--nc-radius)", fontSize: 14, fontWeight: 700, cursor: "pointer", opacity: salvando || !volume ? 0.5 : 1, flexShrink: 0, fontFamily: "var(--font)" }}>
-            ✓
-          </button>
         </div>
 
         {/* ml/hora em tempo real */}

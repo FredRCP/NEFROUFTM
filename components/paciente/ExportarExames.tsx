@@ -171,7 +171,96 @@ function loadLib(src: string, scriptId: string, globalKey: string): Promise<unkn
   });
 }
 
-// ─── Componente ───────────────────────────────────────────────────────────────
+// ─── VisualizarRegistro — fora do ExportarExames para evitar recriação no render ──
+
+interface VisualizarRegistroProps {
+  r: RegistroExame;
+  enrichRegistro: (r: RegistroExame) => RegistroExame;
+  onVoltar: () => void;
+  onPDF: () => void;
+  gerandoPDF: boolean;
+}
+
+function VisualizarRegistro({ r, enrichRegistro, onVoltar, onPDF, gerandoPDF }: VisualizarRegistroProps) {
+  const enriched = enrichRegistro(r);
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+        <button onClick={onVoltar}
+          style={{ background: "var(--accent-dim)", border: "none", borderRadius: "var(--nc-radius)", padding: "5px 12px", color: "var(--accent)", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+          ← Voltar
+        </button>
+        <h3 style={{ fontSize: 14, fontWeight: 800, color: "var(--text)", margin: 0 }}>
+          Registro de {fmtDt(r.data)}
+        </h3>
+        <button onClick={onPDF} disabled={gerandoPDF}
+          className="nc-btn nc-btn-primary cursor-pointer" style={{ marginLeft: "auto", padding: "5px 14px", fontSize: 12 }}>
+          {gerandoPDF ? "⏳ Gerando..." : "📄 PDF"}
+        </button>
+      </div>
+
+      {GRUPOS_EXIBICAO.map(grupo => {
+        const itens = grupo.campos.filter(c => enriched.parametros[c.k] != null);
+        if (itens.length === 0) return null;
+        return (
+          <div key={grupo.label} style={{ marginBottom: 14 }}>
+            <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--accent)", margin: "0 0 6px", borderBottom: "1px solid var(--border)", paddingBottom: 4 }}>
+              {grupo.label}
+            </p>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "6px 12px" }}>
+              {itens.map(c => (
+                <div key={c.k} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 8px", background: "var(--card2)", borderRadius: "var(--nc-radius)", border: "1px solid var(--border)" }}>
+                  <span style={{ fontSize: 11, color: "var(--text3)", fontWeight: 600 }}>{c.l}</span>
+                  <span style={{ fontSize: 13, fontWeight: 800, fontFamily: "var(--mono)", color: "var(--text)" }}>
+                    {enriched.parametros[c.k]} <span style={{ fontSize: 9, fontWeight: 400, color: "var(--text3)" }}>{c.u}</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+
+      {CAMPOS_TEXTO_EXIBICAO.some(c => r.parametros[c.k]) && (
+        <div style={{ marginBottom: 14 }}>
+          <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--accent)", margin: "0 0 6px", borderBottom: "1px solid var(--border)", paddingBottom: 4 }}>
+            Resultados qualitativos
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {CAMPOS_TEXTO_EXIBICAO.filter(c => r.parametros[c.k]).map(c => (
+              <div key={c.k} style={{ padding: "6px 10px", background: "var(--card2)", borderRadius: "var(--nc-radius)", border: "1px solid var(--border)" }}>
+                <span style={{ fontSize: 10, fontWeight: 700, color: "var(--text3)", display: "block", marginBottom: 2 }}>{c.l}</span>
+                <span style={{ fontSize: 12, color: "var(--text)" }}>{String(r.parametros[c.k])}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {r.parametros["outros_lista"] && (() => {
+        try {
+          const lista = JSON.parse(String(r.parametros["outros_lista"])) as { nome: string; resultado: string }[];
+          if (lista.length === 0) return null;
+          return (
+            <div>
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--accent)", margin: "0 0 6px", borderBottom: "1px solid var(--border)", paddingBottom: 4 }}>
+                Outros
+              </p>
+              {lista.map((item, i) => (
+                <div key={i} style={{ padding: "5px 10px", background: "var(--accent-dim)", borderRadius: "var(--nc-radius)", border: "1px solid var(--border2)", marginBottom: 4, display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: "var(--accent)" }}>{item.nome}</span>
+                  <span style={{ fontSize: 12, color: "var(--text2)" }}>{item.resultado}</span>
+                </div>
+              ))}
+            </div>
+          );
+        } catch { return null; }
+      })()}
+    </div>
+  );
+}
+
+// ─── Componente principal ─────────────────────────────────────────────────────
 
 export function ExportarExames({ registros, paciente, acompanhamento, onClose }: ExportarExamesProps) {
   const [modo, setModo] = useState<"tabela" | "registro">("tabela");
@@ -283,26 +372,37 @@ export function ExportarExames({ registros, paciente, acompanhamento, onClose }:
       doc.text(meta, margin, y + 5);
       y += 14;
 
-      const regs = registrosFiltrados.map(enrichRegistro);
+      const regs = [...registrosFiltrados].reverse().map(enrichRegistro);
 
-      // ── Tabela comparativa (modo tabela) ─────────────────────────────────
+      // ── Tabela transposta: exames nas linhas, datas nas colunas ──────────
       const camposTabela = [
-        { k: "creatinina", l: "Cr (mg/dL)" },
-        { k: "ureia", l: "Ur (mg/dL)" },
-        { k: "tfg_calc", l: "TFG" },
-        { k: "potassio", l: "K (mEq/L)" },
-        { k: "sodio", l: "Na (mEq/L)" },
-        { k: "hemoglobina", l: "Hb (g/dL)" },
-        { k: "calcio", l: "Ca (mg/dL)" },
-        { k: "fosforo", l: "P (mg/dL)" },
+        { k: "tfg_calc", l: "TFG-e (mL/min)" },
+        { k: "creatinina", l: "Creatinina (mg/dL)" },
+        { k: "ureia", l: "Ureia (mg/dL)" },
+        { k: "potassio", l: "Potássio (mEq/L)" },
+        { k: "sodio", l: "Sódio (mEq/L)" },
+        { k: "hemoglobina", l: "Hemoglobina (g/dL)" },
+        { k: "calcio", l: "Cálcio (mg/dL)" },
+        { k: "fosforo", l: "Fósforo (mg/dL)" },
         { k: "ph", l: "pH" },
-        { k: "bic", l: "Bic" },
+        { k: "bic", l: "Bicarbonato (mEq/L)" },
+        { k: "albumina", l: "Albumina (g/dL)" },
+        { k: "plaquetas", l: "Plaquetas (mil/µL)" },
+        { k: "tap", l: "TAP (%)" },
       ];
 
-      const head = [["Data", ...camposTabela.map(c => c.l)]];
-      const body = regs.map(r => [
-        fmtDt(r.data),
-        ...camposTabela.map(c => {
+      // Só inclui linhas que tenham pelo menos um valor
+      const linhasComDados = camposTabela.filter(c =>
+        regs.some(r => r.parametros[c.k] != null)
+      );
+
+      // Cabeçalho: "Exame" + uma coluna por data (mais recente primeiro)
+      const head = [["Exame", ...regs.map(r => fmtDt(r.data))]];
+
+      // Corpo: uma linha por exame
+      const body = linhasComDados.map(c => [
+        c.l,
+        ...regs.map(r => {
           const v = r.parametros[c.k];
           return v != null ? String(v) : "—";
         }),
@@ -368,106 +468,9 @@ export function ExportarExames({ registros, paciente, acompanhamento, onClose }:
     setGerandoPDF(false);
   }
 
-  // ─── Renderização do modal de um registro ────────────────────────────────
-
-  function VisualizarRegistro({ r }: { r: RegistroExame }) {
-    const enriched = enrichRegistro(r);
-    return (
-      <div>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-          <button onClick={() => setRegistroSelecionado(null)}
-            style={{ background: "var(--accent-dim)", border: "none", borderRadius: "var(--nc-radius)", padding: "5px 12px", color: "var(--accent)", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
-            ← Voltar
-          </button>
-          <h3 style={{ fontSize: 14, fontWeight: 800, color: "var(--text)", margin: 0 }}>
-            Registro de {fmtDt(r.data)}
-          </h3>
-          <button onClick={exportarPDF} disabled={gerandoPDF}
-            className="nc-btn nc-btn-primary cursor-pointer" style={{ marginLeft: "auto", padding: "5px 14px", fontSize: 12 }}>
-            {gerandoPDF ? "⏳ Gerando..." : "📄 PDF"}
-          </button>
-        </div>
-
-        {GRUPOS_EXIBICAO.map(grupo => {
-          const itens = grupo.campos.filter(c => enriched.parametros[c.k] != null);
-          if (itens.length === 0) return null;
-          return (
-            <div key={grupo.label} style={{ marginBottom: 14 }}>
-              <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--accent)", margin: "0 0 6px", borderBottom: "1px solid var(--border)", paddingBottom: 4 }}>
-                {grupo.label}
-              </p>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "6px 12px" }}>
-                {itens.map(c => (
-                  <div key={c.k} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 8px", background: "var(--card2)", borderRadius: "var(--nc-radius)", border: "1px solid var(--border)" }}>
-                    <span style={{ fontSize: 11, color: "var(--text3)", fontWeight: 600 }}>{c.l}</span>
-                    <span style={{ fontSize: 13, fontWeight: 800, fontFamily: "var(--mono)", color: "var(--text)" }}>
-                      {enriched.parametros[c.k]} <span style={{ fontSize: 9, fontWeight: 400, color: "var(--text3)" }}>{c.u}</span>
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          );
-        })}
-
-        {/* Campos texto */}
-        {CAMPOS_TEXTO_EXIBICAO.some(c => r.parametros[c.k]) && (
-          <div style={{ marginBottom: 14 }}>
-            <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--accent)", margin: "0 0 6px", borderBottom: "1px solid var(--border)", paddingBottom: 4 }}>
-              Resultados qualitativos
-            </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {CAMPOS_TEXTO_EXIBICAO.filter(c => r.parametros[c.k]).map(c => (
-                <div key={c.k} style={{ padding: "6px 10px", background: "var(--card2)", borderRadius: "var(--nc-radius)", border: "1px solid var(--border)" }}>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: "var(--text3)", display: "block", marginBottom: 2 }}>{c.l}</span>
-                  <span style={{ fontSize: 12, color: "var(--text)" }}>{String(r.parametros[c.k])}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Outros dinâmicos */}
-        {r.parametros["outros_lista"] && (() => {
-          try {
-            const lista = JSON.parse(String(r.parametros["outros_lista"])) as { nome: string; resultado: string }[];
-            if (lista.length === 0) return null;
-            return (
-              <div>
-                <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--accent)", margin: "0 0 6px", borderBottom: "1px solid var(--border)", paddingBottom: 4 }}>
-                  Outros
-                </p>
-                {lista.map((item, i) => (
-                  <div key={i} style={{ padding: "5px 10px", background: "var(--accent-dim)", borderRadius: "var(--nc-radius)", border: "1px solid var(--border2)", marginBottom: 4, display: "flex", justifyContent: "space-between" }}>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: "var(--accent)" }}>{item.nome}</span>
-                    <span style={{ fontSize: 12, color: "var(--text2)" }}>{item.resultado}</span>
-                  </div>
-                ))}
-              </div>
-            );
-          } catch { return null; }
-        })()}
-      </div>
-    );
-  }
-
   // ─── Tabela comparativa ───────────────────────────────────────────────────
-
-  const camposTabela = [
-    { k: "creatinina", l: "Cr" },
-    { k: "tfg_calc", l: "TFG" },
-    { k: "ureia", l: "Ur" },
-    { k: "potassio", l: "K" },
-    { k: "sodio", l: "Na" },
-    { k: "hemoglobina", l: "Hb" },
-    { k: "calcio", l: "Ca" },
-    { k: "fosforo", l: "P" },
-    { k: "ph", l: "pH" },
-    { k: "bic", l: "Bic" },
-  ];
-
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-2 sm:p-4"
+    <div className="fixed inset-0 z-index: 300 flex items-center justify-center p-2 sm:p-4"
       style={{ background: "rgba(0,0,0,0.55)" }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="flex max-h-[95vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl"
@@ -487,7 +490,13 @@ export function ExportarExames({ registros, paciente, acompanhamento, onClose }:
         {/* Corpo */}
         <div className="flex-1 overflow-y-auto" style={{ padding: "16px 20px", background: "var(--bg)" }}>
           {registroSelecionado ? (
-            <VisualizarRegistro r={registroSelecionado} />
+            <VisualizarRegistro
+              r={registroSelecionado}
+              enrichRegistro={enrichRegistro}
+              onVoltar={() => setRegistroSelecionado(null)}
+              onPDF={exportarPDF}
+              gerandoPDF={gerandoPDF}
+            />
           ) : (
             <>
               {/* Filtros de período + ações — simplificado */}
@@ -518,7 +527,7 @@ export function ExportarExames({ registros, paciente, acompanhamento, onClose }:
 
               {/* Modo tabela transposta — exames nas linhas, datas nas colunas */}
               {modo === "tabela" && (() => {
-                const regs = registrosFiltrados.map(enrichRegistro);
+                const regs = [...registrosFiltrados].reverse().map(enrichRegistro);
                 const camposTabela = [
                   { k: "tfg_calc", l: "TFG-e (mL/min)" },
                   { k: "creatinina", l: "Creatinina (mg/dL)" },
@@ -538,15 +547,15 @@ export function ExportarExames({ registros, paciente, acompanhamento, onClose }:
                   regs.some(r => r.parametros[c.k] != null)
                 );
                 return (
-                  <div style={{ overflowX: "auto" }}>
+                  <div style={{ overflowX: "auto", isolation: "isolate" }}>
                     <table style={{ borderCollapse: "collapse", fontSize: 12, minWidth: "100%" }}>
                       <thead>
                         <tr style={{ background: "#1e3a5f" }}>
-                          <th style={{ padding: "8px 14px", textAlign: "left", color: "rgba(255,255,255,0.7)", fontSize: 11, fontWeight: 700, whiteSpace: "nowrap", position: "sticky", left: 0, background: "#1e3a5f", zIndex: 1 }}>
+                          <th style={{ padding: "7px 10px", textAlign: "left", color: "rgba(255,255,255,0.7)", fontSize: 11, fontWeight: 700, whiteSpace: "nowrap", position: "sticky", left: 0, background: "#1e3a5f", zIndex: 1 }}>
                             Exame
                           </th>
                           {regs.map(r => (
-                            <th key={r.id} style={{ padding: "8px 14px", textAlign: "center", color: "white", fontSize: 11, fontWeight: 700, whiteSpace: "nowrap", minWidth: 90 }}>
+                            <th key={r.id} style={{ padding: "7px 10px", textAlign: "center", color: "white", fontSize: 11, fontWeight: 700, whiteSpace: "nowrap", minWidth: 76 }}>
                               {fmtDt(r.data)}
                             </th>
                           ))}
@@ -555,13 +564,13 @@ export function ExportarExames({ registros, paciente, acompanhamento, onClose }:
                       <tbody>
                         {camposComDados.map(({ k, l }, idx) => (
                           <tr key={k} style={{ borderBottom: "1px solid var(--border)", background: idx % 2 === 0 ? "var(--card)" : "var(--card2)" }}>
-                            <td style={{ padding: "7px 14px", fontWeight: 700, color: "var(--text2)", whiteSpace: "nowrap", fontSize: 11, position: "sticky", left: 0, background: idx % 2 === 0 ? "var(--card)" : "var(--card2)", zIndex: 1 }}>
+                            <td style={{ padding: "5px 10px", fontWeight: 700, color: "var(--text2)", whiteSpace: "nowrap", fontSize: 11, position: "sticky", left: 0, background: idx % 2 === 0 ? "var(--card)" : "var(--card2)", zIndex: 1 }}>
                               {l}
                             </td>
                             {regs.map(r => {
                               const v = r.parametros[k];
                               return (
-                                <td key={r.id} style={{ padding: "7px 14px", textAlign: "center", fontFamily: "var(--mono)", fontWeight: 700, fontSize: 12, color: v != null ? "var(--text)" : "var(--text3)" }}>
+                                <td key={r.id} style={{ padding: "5px 10px", textAlign: "center", fontFamily: "var(--mono)", fontWeight: 700, fontSize: 12, color: v != null ? "var(--text)" : "var(--text3)" }}>
                                   {v != null ? String(v) : "—"}
                                 </td>
                               );
