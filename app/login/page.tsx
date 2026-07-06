@@ -36,10 +36,10 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center px-4" style={{ background: "var(--bg)" }}>
       <div className="nc-card w-full max-w-sm p-8">
-        <h1 className="text-xl font-extrabold tracking-tight" style={{ color: "var(--text)" }}>
+        <h1 className="text-xl font-extrabold tracking-tight" style={{ color: "var(--text)", textAlign: 'center' }}>
           NEFRO<span style={{ color: "var(--text3)", fontWeight: 500 }}>-UFTM</span>
         </h1>
-        <p className="mt-1 text-sm" style={{ color: "var(--text3)" }}>
+        <p className="mt-1 text-sm" style={{ color: "var(--text3)",  textAlign: 'center' }}>
           Acompanhamento nefrológico — equipe HC-UFTM
         </p>
 
