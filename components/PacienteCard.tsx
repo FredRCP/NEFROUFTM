@@ -206,17 +206,17 @@ export function PacienteCard({ acompanhamento, paciente, internacao, pendencias 
       {/* Nome (esquerda) + leito (canto direito) */}
       <div className="flex items-baseline justify-between gap-1.5">
         <p
-          className="line-clamp-2 text-[17px] font-extrabold sm:text-[15px]"
+          className="line-clamp-2 text-[14px] font-extrabold sm:text-[15px]"
           style={{ color: "var(--text)", lineHeight: 1.2, letterSpacing: "0.01em" }}
         >
           {nomeAbreviado(paciente.nome)}
         </p>
         {internacao.enfermaria_leito && (
           <p
-            className="flex shrink-0 items-center gap-0.5 whitespace-nowrap text-[17px] font-extrabold sm:text-[15px]"
+            className="flex shrink-0 items-center gap-0.5 whitespace-nowrap text-[14px] font-extrabold sm:text-[15px]"
             style={{ color: "var(--accent)", lineHeight: 1.2 }}
           >
-            <span style={{ fontSize: 14, transform: "translateY(-1px)" }}>🛏️</span>
+            <span style={{ fontSize: 12, transform: "translateY(-1px)" }}>🛏️</span>
             {internacao.enfermaria_leito}
           </p>
         )}

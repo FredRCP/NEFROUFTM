@@ -6,7 +6,9 @@ import {
   atualizarResumoAcompanhamento,
   darBaixaAcompanhamento,
 } from "@/lib/actions/acompanhamentos";
+import { atualizarLeito } from "@/lib/actions/pacientesExtra";
 import { NovoPacienteModal } from "@/components/paciente/NovoPacienteModal";
+import { CATALOGO_LEITOS, SETORES } from "@/types/database";
 import type { AcompanhamentoNefro, Paciente, Internacao } from "@/types/database";
 
 interface AbaResumoProps {
@@ -83,6 +85,21 @@ export function AbaResumo({ acompanhamento, paciente, internacao }: AbaResumoPro
   const [tagsTexto, setTagsTexto] = useState((acompanhamento.tags || []).join(", "));
   const [prioridade, setPrioridade] = useState(acompanhamento.prioridade || "");
 
+  // Edição inline do leito
+  const [editandoLeito, setEditandoLeito] = useState(false);
+  const [novoLeito, setNovoLeito] = useState(internacao.enfermaria_leito || "");
+  const [salvandoLeito, setSalvandoLeito] = useState(false);
+
+  async function handleSalvarLeito() {
+    if (!novoLeito) return;
+    const leitoCfg = CATALOGO_LEITOS.find(l => l.numero === novoLeito);
+    const setorNovo = leitoCfg?.setor ?? internacao.setor;
+    setSalvandoLeito(true);
+    await atualizarLeito(internacao.id, novoLeito, setorNovo);
+    setSalvandoLeito(false);
+    setEditandoLeito(false);
+  }
+
   const [mostrarBaixa, setMostrarBaixa] = useState(false);
   const [motivoAlta, setMotivoAlta] = useState("");
   const [desfechoRenal, setDesfechoRenal] = useState("");
@@ -144,17 +161,57 @@ export function AbaResumo({ acompanhamento, paciente, internacao }: AbaResumoPro
                 {" · RG "}{paciente.rg_hospitalar}
               </p>
             </div>
-            {/* Leito em destaque — dado mais importante */}
-            <div className="shrink-0 rounded-(--nc-radius-lg) px-4 py-2 text-center"
-              style={{ background: "var(--accent-dim)", border: "1px solid var(--border2)", minWidth: 90 }}>
-              <p className="text-[10px] font-bold uppercase" style={{ color: "var(--text3)" }}>Leito</p>
-              <p className="text-lg font-black" style={{ color: "var(--accent)", fontFamily: "var(--mono)" }}>
-                {internacao.enfermaria_leito || "—"}
-              </p>
-              <p className="text-[10px]" style={{ color: "var(--text3)" }}>
-                {internacao.setor.replace(/_/g, " ")}
-              </p>
-            </div>
+            {/* Leito em destaque — clicável para edição inline */}
+            {editandoLeito ? (
+              <div className="shrink-0 rounded-(--nc-radius-lg) p-2 text-center"
+                style={{ background: "var(--accent-dim)", border: "1px solid var(--accent)", minWidth: 110 }}>
+                <p className="text-[10px] font-bold uppercase mb-1" style={{ color: "var(--text3)" }}>Leito</p>
+                <select
+                  value={novoLeito}
+                  onChange={e => setNovoLeito(e.target.value)}
+                  autoFocus
+                  className="nc-input cursor-pointer"
+                  style={{ padding: "3px 6px", fontSize: 13, fontWeight: 700, marginBottom: 4 }}
+                >
+                  {SETORES.map(s => {
+                    const leitosDoSetor = CATALOGO_LEITOS.filter(l => l.setor === s.value);
+                    if (!leitosDoSetor.length) return null;
+                    return (
+                      <optgroup key={s.value} label={s.label}>
+                        {leitosDoSetor.map(l => (
+                          <option key={l.numero} value={l.numero}>{l.numero}</option>
+                        ))}
+                      </optgroup>
+                    );
+                  })}
+                </select>
+                <div style={{ display: "flex", gap: 4, justifyContent: "center" }}>
+                  <button onClick={handleSalvarLeito} disabled={salvandoLeito}
+                    style={{ background: "var(--accent)", color: "white", border: "none", borderRadius: "var(--nc-radius)", padding: "3px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                    {salvandoLeito ? "..." : "✓"}
+                  </button>
+                  <button onClick={() => { setEditandoLeito(false); setNovoLeito(internacao.enfermaria_leito || ""); }}
+                    style={{ background: "none", border: "1px solid var(--border)", borderRadius: "var(--nc-radius)", padding: "3px 8px", fontSize: 11, cursor: "pointer", color: "var(--text3)" }}>
+                    ✕
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => setEditandoLeito(true)}
+                className="shrink-0 rounded-(--nc-radius-lg) px-4 py-2 text-center transition hover:opacity-80 cursor-pointer"
+                style={{ background: "var(--accent-dim)", border: "1px solid var(--border2)", minWidth: 90 }}
+                title="Clique para editar o leito"
+              >
+                <p className="text-[10px] font-bold uppercase" style={{ color: "var(--text3)" }}>Leito ✏</p>
+                <p className="text-lg font-black" style={{ color: "var(--accent)", fontFamily: "var(--mono)" }}>
+                  {internacao.enfermaria_leito || "—"}
+                </p>
+                <p className="text-[10px]" style={{ color: "var(--text3)" }}>
+                  {internacao.setor.replace(/_/g, " ")}
+                </p>
+              </button>
+            )}
           </div>
 
           {/* Comorbidades */}

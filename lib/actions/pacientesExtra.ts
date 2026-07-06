@@ -119,3 +119,14 @@ export async function editarPaciente(params: {
   revalidatePath(`/pacientes/${params.acompanhamentoId}`);
   return { sucesso: true };
 }
+
+export async function atualizarLeito(internacaoId: string, novoLeito: string, setorNovo: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("internacoes")
+    .update({ enfermaria_leito: novoLeito, setor: setorNovo })
+    .eq("id", internacaoId);
+  if (error) return { sucesso: false, erro: error.message };
+  revalidatePath("/dashboard");
+  return { sucesso: true };
+}
