@@ -82,6 +82,26 @@ function ordenarPorLeito(linhas: LinhaDashboard[]): LinhaDashboard[] {
 
 type FiltroIndicador = "todos" | "avaliados" | "pendentes" | "hd_hoje";
 
+async function buscarInativos(supabase: ReturnType<typeof createClient>, termo: string): Promise<LinhaDashboard[]> {
+  if (!termo.trim()) return [];
+  const { data, error } = await supabase
+    .from("acompanhamentos_nefro")
+    .select(`*, paciente:pacientes(*), internacao:internacoes(*), pendencias(*)`)
+    .eq("ativo", false)
+    .or(`paciente.nome.ilike.%${termo}%,paciente.rg_hospitalar.ilike.%${termo}%`)
+    .order("created_at", { ascending: false })
+    .limit(20);
+  if (error) return [];
+  return (data || []).map(
+    (row: AcompanhamentoNefro & { paciente: Paciente; internacao: Internacao; pendencias: Pendencia[] }) => ({
+      acompanhamento: row,
+      paciente: row.paciente,
+      internacao: row.internacao,
+      pendencias: row.pendencias || [],
+    })
+  );
+}
+
 export function DashboardClient() {
   const supabase = createClient();
   const [linhas, setLinhas] = useState<LinhaDashboard[]>([]);
@@ -89,9 +109,10 @@ export function DashboardClient() {
   const [busca, setBusca] = useState("");
   const [filtroIndicador, setFiltroIndicador] = useState<FiltroIndicador>("todos");
   const [modalAberto, setModalAberto] = useState(false);
-  // Accordion dos setores — todos expandidos por padrão.
-  // Estado NÃO persiste entre sessões (segurança: ao recarregar, tudo expande).
   const [setoresRecolhidos, setSetoresRecolhidos] = useState<Set<string>>(new Set());
+  const [incluirInativos, setIncluirInativos] = useState(false);
+  const [linhasInativas, setLinhasInativas] = useState<LinhaDashboard[]>([]);
+  const [buscandoInativos, setBuscandoInativos] = useState(false);
 
   function toggleSetor(valor: string) {
     setSetoresRecolhidos((prev) => {
@@ -132,7 +153,21 @@ export function DashboardClient() {
     };
   }, [recarregar, supabase]);
 
-  // Filtro de busca global simples (Seção 5.0) — nome, RG, diagnóstico, etiologia, tags, comorbidades
+  // Busca inativos quando toggle está ativo e há termo de busca
+  useEffect(() => {
+    if (!incluirInativos || !busca.trim()) {
+      setLinhasInativas([]);
+      return;
+    }
+    let ativo = true;
+    setBuscandoInativos(true);
+    buscarInativos(supabase, busca).then(dados => {
+      if (ativo) { setLinhasInativas(dados); setBuscandoInativos(false); }
+    });
+    return () => { ativo = false; };
+  }, [incluirInativos, busca, supabase]);
+
+  // Filtro de busca global — nome, RG, diagnóstico, etiologia, tags, comorbidades
   const linhasPorBusca = busca.trim()
     ? linhas.filter((l) => {
         const termo = busca.toLowerCase();
@@ -235,13 +270,10 @@ export function DashboardClient() {
         />
       </div>
 
-      {/* Busca global + novo paciente */}
-      <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:gap-3">
+      {/* Busca global + toggle inativos + novo paciente */}
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:gap-3">
         <div className="relative flex-1">
-          <span
-            className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-base"
-            style={{ color: "var(--text3)" }}
-          >
+          <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-base" style={{ color: "var(--text3)" }}>
             ⌕
           </span>
           <input
@@ -253,10 +285,55 @@ export function DashboardClient() {
             style={{ paddingLeft: 36 }}
           />
         </div>
+        {/* Toggle incluir inativos */}
+        <button
+          onClick={() => setIncluirInativos(v => !v)}
+          className="nc-btn nc-btn-ghost shrink-0"
+          style={{ borderColor: incluirInativos ? "var(--accent)" : undefined, color: incluirInativos ? "var(--accent)" : undefined }}
+          title="Incluir pacientes com alta na busca"
+        >
+          {incluirInativos ? "👁 Com alta" : "👁 Com alta"}
+        </button>
         <button onClick={() => setModalAberto(true)} className="nc-btn nc-btn-primary shrink-0">
           <span className="text-base leading-none">+</span> Novo paciente
         </button>
       </div>
+
+      {/* Resultados de pacientes inativos (com alta) — só aparece quando toggle ativo e há busca */}
+      {incluirInativos && busca.trim() && (
+        <div className="mb-6 rounded-(--nc-radius-lg) border p-4"
+          style={{ background: "var(--card)", borderColor: "var(--border)" }}>
+          <p className="mb-3 text-xs font-bold uppercase tracking-widest" style={{ color: "var(--text3)" }}>
+            Pacientes com alta — resultados para "{busca}"
+          </p>
+          {buscandoInativos ? (
+            <p className="text-sm" style={{ color: "var(--text3)" }}>Buscando...</p>
+          ) : linhasInativas.length === 0 ? (
+            <p className="text-sm" style={{ color: "var(--text3)" }}>Nenhum resultado.</p>
+          ) : (
+            <div className="space-y-2">
+              {linhasInativas.map(l => (
+                <a key={l.acompanhamento.id} href={`/pacientes/${l.acompanhamento.id}`}
+                  className="flex items-center gap-3 rounded-(--nc-radius) px-3 py-2.5 transition hover:opacity-80"
+                  style={{ background: "var(--bg2)", border: "1px solid var(--border)", textDecoration: "none" }}>
+                  <div style={{ flex: 1 }}>
+                    <span className="text-sm font-bold" style={{ color: "var(--text)" }}>{l.paciente.nome}</span>
+                    <span className="ml-3 text-xs" style={{ color: "var(--text3)" }}>RG {l.paciente.rg_hospitalar}</span>
+                    {l.acompanhamento.diagnostico_principal && (
+                      <span className="ml-3 text-xs" style={{ color: "var(--text3)" }}>
+                        · {l.acompanhamento.diagnostico_principal.replace(/_/g, " ")}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-xs rounded-full px-2 py-0.5 font-bold" style={{ background: "var(--bg3)", color: "var(--text3)" }}>
+                    Alta
+                  </span>
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Cards pelos 3 grandes grupos — sempre fixos, mesmo vazios */}
       {linhasFiltradas.length === 0 && (busca.trim() || filtroIndicador !== "todos") ? (
@@ -306,7 +383,7 @@ export function DashboardClient() {
                       Nenhum paciente neste grupo.
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 items-stretch sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8" style={{ gap: "12px" }}>
+                    <div className="grid grid-cols-2 items-stretch sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7" style={{ gap: "12px" }}>
                       {linhasDoGrupo.map((linha) => (
                         <PacienteCard
                           key={linha.acompanhamento.id}

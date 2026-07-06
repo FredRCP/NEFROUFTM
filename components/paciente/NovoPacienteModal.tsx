@@ -273,16 +273,19 @@ export function NovoPacienteModal({
               <div className="flex gap-2">
                 <input
                   type="text"
+                  inputMode="numeric"
                   value={rg}
                   disabled={rgConfirmado}
                   onChange={(e) => {
-                    setRg(e.target.value);
+                    // Aceita apenas dígitos
+                    const apenasDigitos = e.target.value.replace(/\D/g, "");
+                    setRg(apenasDigitos);
                     setResultadoVerificacao(null);
                     setRgConfirmado(false);
                     setModoReativacao(false);
                   }}
                   className={`${inputClass} flex-1 disabled:opacity-60`}
-                  placeholder="Número do registro hospitalar"
+                  placeholder="Apenas números (ex: 123456)"
                 />
                 {!rgConfirmado && (
                   <button

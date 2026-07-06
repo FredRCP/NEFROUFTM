@@ -46,12 +46,13 @@ const DIAGNOSTICO_LABEL: Record<string, string> = {
 };
 
 const SITUACAO_DIALITICA_CONFIG: Record<string, { label: string; cor: string; bg: string; emoji: string }> = {
-  hd_hoje:         { label: "HD Hoje",     cor: "var(--red)",    bg: "var(--red-dim)",    emoji: "🔴" },
-  hd_amanha:       { label: "HD Amanhã",   cor: "var(--amber)",  bg: "var(--amber-dim)",  emoji: "🟡" },
-  hd_continua:     { label: "HD Contínua", cor: "#7c3aed",       bg: "#f5f3ff",           emoji: "🔁" },
-  dpi:             { label: "DPI",         cor: "#0891b2",       bg: "#ecfeff",           emoji: "💧" },
-  tpe:             { label: "TPE",         cor: "#db2777",       bg: "#fdf2f8",           emoji: "🔬" },
-  sem_hd_programada: { label: "Sem HD",   cor: "var(--green)",  bg: "var(--green-dim)",  emoji: "🟢" },
+  hd_hoje:           { label: "HD Hoje",         cor: "var(--red)",    bg: "var(--red-dim)",    emoji: "🔴" },
+  hd_amanha:         { label: "HD Amanhã",        cor: "var(--amber)",  bg: "var(--amber-dim)",  emoji: "🟡" },
+  hd_continua:       { label: "HD Contínua",      cor: "#7c3aed",       bg: "#f5f3ff",           emoji: "🔁" },
+  dpi:               { label: "DPI",              cor: "#0891b2",       bg: "#ecfeff",           emoji: "💧" },
+  tpe:               { label: "TPE",              cor: "#db2777",       bg: "#fdf2f8",           emoji: "🔬" },
+  conservador:       { label: "Conservador",      cor: "#0f766e",       bg: "#f0fdfa",           emoji: "🌿" },
+  sem_hd_programada: { label: "Sem HD",           cor: "var(--green)",  bg: "var(--green-dim)",  emoji: "🟢" },
 };
 
 export function PacienteCard({ acompanhamento, paciente, internacao, pendencias }: PacienteCardProps) {
@@ -61,12 +62,13 @@ export function PacienteCard({ acompanhamento, paciente, internacao, pendencias 
   const [mostrarMenuHd, setMostrarMenuHd] = useState(false);
   const [modalPendenciasAberto, setModalPendenciasAberto] = useState(false);
 
-  const situacaoCfg = SITUACAO_DIALITICA_CONFIG[acompanhamento.situacao_dialitica];
+  const situacaoCfg = acompanhamento.situacao_dialitica
+    ? SITUACAO_DIALITICA_CONFIG[acompanhamento.situacao_dialitica]
+    : null;
+
   const temPendencia = pendencias.length > 0;
 
-  // Cor da borda lateral — sempre combinando com a pílula da faixa do topo:
-  // âmbar se tem pendência (prioridade visual mais alta), vermelho se não
-  // avaliado ainda, verde se avaliado e sem pendência.
+  // Cor da borda lateral
   const corBorda = temPendencia ? "var(--amber)" : !acompanhamento.avaliado_hoje ? "var(--red)" : "var(--green)";
 
   function handleToggleAvaliado() {
@@ -75,7 +77,7 @@ export function PacienteCard({ acompanhamento, paciente, internacao, pendencias 
     });
   }
 
-  function handleSituacaoChange(novoValor: "hd_hoje" | "hd_amanha" | "sem_hd_programada" | "hd_continua" | "dpi" | "tpe") {
+  function handleSituacaoChange(novoValor: "hd_hoje" | "hd_amanha" | "sem_hd_programada" | "hd_continua" | "dpi" | "tpe" | "conservador") {
     setMostrarMenuHd(false);
     startTransition(() => {
       atualizarSituacaoDialitica(acompanhamento.id, novoValor);
@@ -272,16 +274,24 @@ export function PacienteCard({ acompanhamento, paciente, internacao, pendencias 
 
       <div className="min-h-2 flex-1" />
 
-      {/* Badge de situação dialítica — substitui o antigo dropdown */}
+      {/* Badge de situação dialítica */}
       <div className="relative mb-1" onClick={(e) => e.stopPropagation()}>
         <button
           onClick={() => setMostrarMenuHd((v) => !v)}
           disabled={isPending}
-          title="Clique para alterar a situação dialítica"
+          title="Clique para definir a conduta dialítica"
           className="flex w-full items-center justify-center gap-1 rounded-full px-2 py-2 text-[12px] font-bold transition sm:py-1 sm:text-[11px]"
-          style={{ background: situacaoCfg.bg, color: situacaoCfg.cor }}
+          style={{
+            background: situacaoCfg ? situacaoCfg.bg : "var(--bg3)",
+            color: situacaoCfg ? situacaoCfg.cor : "var(--text3)",
+            border: situacaoCfg ? "none" : "1.5px dashed var(--border2)",
+          }}
         >
-          {situacaoCfg.emoji} {situacaoCfg.label}
+          {situacaoCfg ? (
+            <>{situacaoCfg.emoji} {situacaoCfg.label}</>
+          ) : (
+            <>📋 Definir conduta</>
+          )}
           <span style={{ opacity: 0.65, fontSize: 9 }}>{mostrarMenuHd ? "▴" : "▾"}</span>
         </button>
 
@@ -297,7 +307,7 @@ export function PacienteCard({ acompanhamento, paciente, internacao, pendencias 
                 return (
                   <button
                     key={key}
-                    onClick={() => handleSituacaoChange(key as "hd_hoje" | "hd_amanha" | "sem_hd_programada" | "hd_continua" | "dpi" | "tpe")}
+                    onClick={() => handleSituacaoChange(key as "hd_hoje" | "hd_amanha" | "sem_hd_programada" | "hd_continua" | "dpi" | "tpe" | "conservador")}
                     className="flex w-full items-center gap-1.5 px-3 py-2 text-left text-xs font-semibold transition hover:opacity-80"
                     style={{ color: cfg.cor, background: key === acompanhamento.situacao_dialitica ? cfg.bg : "transparent" }}
                   >
