@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
 interface AppHeaderProps {
@@ -20,11 +21,6 @@ function getPrimeiroNome(nome: string): string {
   return nome.trim().split(/\s+/)[0] || nome;
 }
 
-/**
- * Cabeçalho padrão das telas autenticadas, no estilo NefroChart:
- * topbar verde institucional, nome do app à esquerda, "Dr./Dra. Nome" +
- * avatar de iniciais + logout à direita.
- */
 export function AppHeader({ nomeMedico, titulo }: AppHeaderProps) {
   const router = useRouter();
   const supabase = createClient();
@@ -42,9 +38,20 @@ export function AppHeader({ nomeMedico, titulo }: AppHeaderProps) {
 
   return (
     <div className="nc-topbar justify-between">
-      <span className="text-base font-extrabold text-white tracking-tight">
-        NEFRO<span className="font-medium text-white/45">-UFTM</span>
-      </span>
+      <div className="flex items-center gap-4">
+        <span className="text-base font-extrabold text-white tracking-tight">
+          NEFRO<span className="font-medium text-white/45">-UFTM</span>
+        </span>
+
+        {/* Link para listagem de pacientes */}
+        <Link
+          href="/pacientes"
+          className="hidden sm:flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold text-white/75 transition hover:bg-white/10 hover:text-white"
+          style={{ textDecoration: "none" }}
+        >
+          📋 Pacientes
+        </Link>
+      </div>
 
       <div className="relative flex items-center gap-2.5">
         <span className="hidden text-sm font-semibold text-white/90 sm:inline">{nomeExibido}</span>
@@ -63,7 +70,26 @@ export function AppHeader({ nomeMedico, titulo }: AppHeaderProps) {
             <div className="absolute top-[120%] right-0 z-50 min-w-50 overflow-hidden rounded-xl border border-(--border) bg-(--card) shadow-(--nc-shadow-md)">
               <div className="border-b border-(--border) bg-(--card2) px-4 py-3">
                 <p className="text-xs font-bold text-(--text)">{nomeExibido}</p>
+                <p className="text-xs text-(--text3) mt-0.5">{nomeMedico}</p>
               </div>
+              {/* Link pacientes no menu mobile */}
+              <Link
+                href="/pacientes"
+                className="flex w-full items-center gap-2 px-4 py-2.5 text-sm font-semibold text-(--text2) transition hover:bg-(--bg2)"
+                style={{ textDecoration: "none" }}
+                onClick={() => setShowMenu(false)}
+              >
+                📋 Todos os pacientes
+              </Link>
+              <Link
+                href="/perfil"
+                className="flex w-full items-center gap-2 px-4 py-2.5 text-sm font-semibold text-(--text2) transition hover:bg-(--bg2)"
+                style={{ textDecoration: "none" }}
+                onClick={() => setShowMenu(false)}
+              >
+                🔑 Alterar senha
+              </Link>
+              <div style={{ height: 1, background: "var(--border)" }} />
               <button
                 onClick={handleLogout}
                 disabled={saindo}

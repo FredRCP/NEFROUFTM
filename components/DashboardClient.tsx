@@ -82,37 +82,6 @@ function ordenarPorLeito(linhas: LinhaDashboard[]): LinhaDashboard[] {
 
 type FiltroIndicador = "todos" | "avaliados" | "pendentes" | "hd_hoje";
 
-async function buscarInativos(supabase: ReturnType<typeof createClient>, termo: string): Promise<LinhaDashboard[]> {
-  // Busca pacientes cujo nome ou RG bate com o termo
-  const { data: pacientes } = await supabase
-    .from("pacientes")
-    .select("id")
-    .or(`nome.ilike.%${termo}%,rg_hospitalar.ilike.%${termo}%`)
-    .limit(30);
-
-  if (!pacientes?.length) return [];
-
-  const ids = pacientes.map((p: { id: string }) => p.id);
-
-  const { data, error } = await supabase
-    .from("acompanhamentos_nefro")
-    .select(`*, paciente:pacientes(*), internacao:internacoes(*), pendencias(*)`)
-    .eq("ativo", false)
-    .in("paciente_id", ids)
-    .order("created_at", { ascending: false })
-    .limit(20);
-
-  if (error) return [];
-  return (data || []).map(
-    (row: AcompanhamentoNefro & { paciente: Paciente; internacao: Internacao; pendencias: Pendencia[] }) => ({
-      acompanhamento: row,
-      paciente: row.paciente,
-      internacao: row.internacao,
-      pendencias: row.pendencias || [],
-    })
-  );
-}
-
 export function DashboardClient() {
   const supabase = createClient();
   const [linhas, setLinhas] = useState<LinhaDashboard[]>([]);
@@ -121,9 +90,6 @@ export function DashboardClient() {
   const [filtroIndicador, setFiltroIndicador] = useState<FiltroIndicador>("todos");
   const [modalAberto, setModalAberto] = useState(false);
   const [setoresRecolhidos, setSetoresRecolhidos] = useState<Set<string>>(new Set());
-  const [incluirInativos, setIncluirInativos] = useState(false);
-  const [linhasInativas, setLinhasInativas] = useState<LinhaDashboard[]>([]);
-  const [buscandoInativos, setBuscandoInativos] = useState(false);
 
   function toggleSetor(valor: string) {
     setSetoresRecolhidos((prev) => {
@@ -163,22 +129,6 @@ export function DashboardClient() {
       supabase.removeChannel(channel);
     };
   }, [recarregar, supabase]);
-
-  // Busca inativos quando toggle está ativo e há termo de busca
-  useEffect(() => {
-    let ativo = true;
-    async function buscar() {
-      if (!incluirInativos || !busca.trim()) {
-        setLinhasInativas([]);
-        return;
-      }
-      setBuscandoInativos(true);
-      const dados = await buscarInativos(supabase, busca);
-      if (ativo) { setLinhasInativas(dados); setBuscandoInativos(false); }
-    }
-    buscar();
-    return () => { ativo = false; };
-  }, [incluirInativos, busca, supabase]);
 
   // Filtro de busca global — nome, RG, diagnóstico, etiologia, tags, comorbidades
   const linhasPorBusca = busca.trim()
@@ -283,7 +233,7 @@ export function DashboardClient() {
         />
       </div>
 
-      {/* Busca global + toggle inativos + novo paciente */}
+      {/* Busca global + novo paciente */}
       <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:gap-3">
         <div className="relative flex-1">
           <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-base" style={{ color: "var(--text3)" }}>
@@ -298,86 +248,10 @@ export function DashboardClient() {
             style={{ paddingLeft: 36 }}
           />
         </div>
-        {/* Toggle incluir inativos */}
-        <button
-          onClick={() => setIncluirInativos(v => !v)}
-          className="nc-btn nc-btn-ghost shrink-0"
-          style={{
-            borderColor: incluirInativos ? "var(--accent)" : undefined,
-            color: incluirInativos ? "var(--accent)" : "var(--text3)",
-            background: incluirInativos ? "var(--accent-dim)" : undefined,
-          }}
-          title="Buscar pacientes que já receberam alta"
-        >
-          🗂 Alta
-        </button>
         <button onClick={() => setModalAberto(true)} className="nc-btn nc-btn-primary shrink-0">
           <span className="text-base leading-none">+</span> Novo paciente
         </button>
       </div>
-
-      {/* Resultados de pacientes com alta — só aparece quando toggle ativo */}
-      {incluirInativos && (
-        <div className="mb-6 rounded-(--nc-radius-lg) border overflow-hidden"
-          style={{ background: "var(--card)", borderColor: "var(--border)" }}>
-          <div style={{ background: "#1e3a5f", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: "white" }}>🗂 Pacientes com alta</span>
-            {busca.trim() && (
-              <span style={{ fontSize: 11, color: "rgba(255,255,255,0.6)" }}>
-                {buscandoInativos ? "Buscando..." : `${linhasInativas.length} resultado(s) para "${busca}"`}
-              </span>
-            )}
-          </div>
-          {!busca.trim() ? (
-            <div style={{ padding: "20px 16px", textAlign: "center" }}>
-              <p style={{ fontSize: 13, color: "var(--text3)" }}>Digite um nome ou RG na busca acima para encontrar pacientes com alta.</p>
-            </div>
-          ) : buscandoInativos ? (
-            <div style={{ padding: "20px 16px", textAlign: "center" }}>
-              <p style={{ fontSize: 13, color: "var(--text3)" }}>Buscando...</p>
-            </div>
-          ) : linhasInativas.length === 0 ? (
-            <div style={{ padding: "20px 16px", textAlign: "center" }}>
-              <p style={{ fontSize: 13, color: "var(--text3)" }}>Nenhum paciente com alta encontrado para &ldquo;{busca}&rdquo;.</p>
-            </div>
-          ) : (
-            <div>
-              {linhasInativas.map((l, idx) => (
-                <a key={l.acompanhamento.id} href={`/pacientes/${l.acompanhamento.id}`}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 12,
-                    padding: "10px 16px", textDecoration: "none",
-                    borderBottom: idx < linhasInativas.length - 1 ? "1px solid var(--border)" : "none",
-                    background: "var(--card)", transition: "background 0.1s",
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.background = "var(--bg2)")}
-                  onMouseLeave={e => (e.currentTarget.style.background = "var(--card)")}>
-                  <div style={{ flex: 1 }}>
-                    <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text)" }}>{l.paciente.nome}</span>
-                    <span style={{ marginLeft: 10, fontSize: 12, color: "var(--text3)", fontFamily: "var(--mono)" }}>RG {l.paciente.rg_hospitalar}</span>
-                    {l.acompanhamento.diagnostico_principal && (
-                      <span style={{ marginLeft: 10, fontSize: 12, color: "var(--text3)" }}>
-                        · {l.acompanhamento.diagnostico_principal.replace(/_/g, " ")}
-                      </span>
-                    )}
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                    {l.internacao?.setor && (
-                      <span style={{ fontSize: 11, color: "var(--text3)" }}>
-                        {l.internacao.setor.replace(/_/g, " ")}
-                      </span>
-                    )}
-                    <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999, background: "var(--bg3)", color: "var(--text3)" }}>
-                      Alta
-                    </span>
-                    <span style={{ color: "var(--text3)", fontSize: 14 }}>›</span>
-                  </div>
-                </a>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Cards pelos 3 grandes grupos — sempre fixos, mesmo vazios */}
       {linhasFiltradas.length === 0 && (busca.trim() || filtroIndicador !== "todos") ? (

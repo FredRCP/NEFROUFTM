@@ -18,13 +18,9 @@ export interface VerificarRgResult {
     observacoes_gerais: string | null;
   };
   acompanhamentosAnteriores?: number;
+  acompanhamentoAtivo?: boolean; // ← novo: true se há acompanhamento ativo
 }
 
-/**
- * Verificação de duplicidade (Seção 3.1 da spec): busca paciente por RG
- * hospitalar antes de permitir cadastro novo. Chamada ao usuário digitar/sair
- * do campo de RG no formulário, antes de liberar o restante do cadastro.
- */
 export async function verificarRgHospitalar(
   rgHospitalar: string
 ): Promise<VerificarRgResult> {
@@ -45,18 +41,24 @@ export async function verificarRgHospitalar(
     .select("id", { count: "exact", head: true })
     .eq("paciente_id", paciente.id);
 
+  // Verifica se há acompanhamento ATIVO no momento
+  const { data: ativo } = await supabase
+    .from("acompanhamentos_nefro")
+    .select("id")
+    .eq("paciente_id", paciente.id)
+    .eq("ativo", true)
+    .maybeSingle();
+
   return {
     existe: true,
     paciente,
     acompanhamentosAnteriores: count ?? 0,
+    acompanhamentoAtivo: !!ativo,
   };
 }
 
 export interface CadastroPacienteInput {
-  // Reaproveitar paciente existente (reinternação) ou criar novo
   pacienteIdExistente?: string;
-
-  // Dados do paciente (só usados se pacienteIdExistente não for informado)
   nome: string;
   rgHospitalar: string;
   dataNascimento?: string;
@@ -67,13 +69,9 @@ export interface CadastroPacienteInput {
   dataCreatininaBasal?: string;
   fonteCreatininaBasal?: string;
   observacoesGerais?: string;
-
-  // Dados da internação (sempre novos)
   dataAdmissao: string;
   setor: string;
   enfermariaLeito?: string;
-
-  // Dados do acompanhamento nefrológico (sempre novos)
   motivoInterconsulta?: string;
   diagnosticoPrincipal?: string;
   etiologia?: string;
@@ -86,10 +84,6 @@ export interface CadastroPacienteResult {
   acompanhamentoId?: string;
 }
 
-/**
- * Cria (ou reativa, no caso de reinternação) o conjunto
- * Paciente -> Internação -> Acompanhamento Nefrológico.
- */
 export async function cadastrarPaciente(
   input: CadastroPacienteInput
 ): Promise<CadastroPacienteResult> {
@@ -102,9 +96,6 @@ export async function cadastrarPaciente(
 
   let pacienteId = input.pacienteIdExistente;
 
-  // Se não veio um paciente existente, cria um novo —
-  // mas antes, defesa em profundidade: revalida que o RG não existe
-  // (evita corrida entre a verificação inicial e o submit do form).
   if (!pacienteId) {
     const { data: jaExiste } = await supabase
       .from("pacientes")
@@ -143,7 +134,6 @@ export async function cadastrarPaciente(
     pacienteId = novoPaciente.id;
   }
 
-  // Cria a internação
   const { data: internacao, error: erroInternacao } = await supabase
     .from("internacoes")
     .insert({
@@ -160,7 +150,6 @@ export async function cadastrarPaciente(
     return { sucesso: false, erro: `Erro ao criar internação: ${erroInternacao?.message}` };
   }
 
-  // Cria o acompanhamento nefrológico (entra na lista ativa do dashboard)
   const { data: acompanhamento, error: erroAcomp } = await supabase
     .from("acompanhamentos_nefro")
     .insert({
