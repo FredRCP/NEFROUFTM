@@ -742,7 +742,7 @@ export function AbaTerapiaDialitica({ acompanhamento, paciente, internacao, medi
     doc.rect(margin, y, contentW, 14, "F");
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(14); doc.setFont("helvetica", "bold");
-    doc.text("HOSPITAL DE CLÍNICAS — UFTM / EBSERH", W / 2, y + 6, { align: "center" });
+    doc.text("HOSPITAL DE CLÍNICAS — UFTM", W / 2, y + 6, { align: "center" });
     doc.setFontSize(9); doc.setFont("helvetica", "normal");
     doc.text("SERVIÇO DE NEFROLOGIA  ·  FOLHA DE PRESCRIÇÃO DE TERAPIA RENAL SUBSTITUTIVA", W / 2, y + 11.5, { align: "center" });
     y += 17;
@@ -863,7 +863,7 @@ export function AbaTerapiaDialitica({ acompanhamento, paciente, internacao, medi
     doc.line(margin, footerY, W - margin, footerY);
     doc.setFontSize(7); doc.setFont("helvetica", "italic"); doc.setTextColor(100, 100, 100);
     doc.text(
-      `Gerado pelo NEFRO-UFTM em ${new Date().toLocaleString("pt-BR")}  ·  Nefrologia HC-UFTM/EBSERH — Uberaba, MG`,
+      `Gerado pelo NEFRO-UFTM em ${new Date().toLocaleString("pt-BR")}  ·  Nefrologia HC-UFTM — Uberaba, MG`,
       W / 2, footerY + 5, { align: "center" }
     );
 
