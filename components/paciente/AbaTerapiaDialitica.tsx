@@ -94,20 +94,20 @@ function FormHD({ p, set }: { p: Record<string, string>; set: (k: string, v: str
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <NumInput label="Tempo" unit="h" value={p.tempoH ?? ""} onChange={v => set("tempoH", v)}
-          placeholder={p.submodalidade === "HD Estendida" ? "6–12" : "3–4"} />
+          placeholder={p.submodalidade === "HD Estendida" ? "6–12" : "2–4"} />
         <NumInput label="Ultrafiltração (perdas)" unit="mL" value={p.ufMl ?? ""} onChange={v => set("ufMl", v)}
           placeholder="0 = sem perdas" />
         <NumInput label="Fluxo de sangue (Qb)" unit="mL/min" value={p.qb ?? ""} onChange={v => set("qb", v)}
-          placeholder={p.submodalidade === "HD Estendida" ? "150–200" : "250–350"} />
+          placeholder={p.submodalidade === "HD Estendida" ? "150–200" : "250–450"} />
         {/* Qd — oculto na UF isolada */}
         {!isUF && (
           <NumInput label="Fluxo de dialisato (Qd)" unit="mL/min" value={p.qd ?? ""} onChange={v => set("qd", v)}
-            placeholder={p.submodalidade === "HD Estendida" ? "300" : "500"} />
+            placeholder={p.submodalidade === "HD Estendida" ? "300" : "500-800"} />
         )}
         {/* Na — oculto na UF isolada */}
         {!isUF && (
           <NumInput label="Sódio (Na)" unit="mEq/L" value={p.sodio ?? ""} onChange={v => set("sodio", v)}
-            placeholder="138–145" />
+            placeholder="135–150" />
         )}
         <NumInput label="Temperatura" unit="°C" value={p.temperatura ?? ""} onChange={v => set("temperatura", v)}
           placeholder="35–37" />
@@ -124,26 +124,26 @@ function FormHD({ p, set }: { p: Record<string, string>; set: (k: string, v: str
         )}
       </div>
 
-      {/* Heparina */}
-      <Toggle label="Heparina" value={p.heparina ?? ""} onChange={v => set("heparina", v)}
-        options={[{ value: "nao", label: "Não" }, { value: "sim", label: "Sim" }]} />
-      {p.heparina === "sim" && (
-        <NumInput label="Dose de heparina" unit="mL" value={p.heparinaQtd ?? ""} onChange={v => set("heparinaQtd", v)}
-          placeholder="Ex: 1,0" hint="Dose em bolus no início" />
-      )}
-
-      {/* Lavagem do sistema */}
-      <Toggle label="Lavagem do sistema" value={p.lavagem ?? ""} onChange={v => set("lavagem", v)}
-        options={[{ value: "nao", label: "Não" }, { value: "sim", label: "Sim" }]} />
-
-      {/* Cálcio do dialisato — oculto na UF isolada */}
-      {!isUF && (
-        <Toggle label="Cálcio do dialisato" value={p.calcio ?? ""} onChange={v => set("calcio", v)}
-          options={[
-            { value: "padrao", label: "Cálcio padrão (3,0 mEq/L)" },
-            { value: "baixo", label: "Baixo cálcio (1,25 mEq/L)" },
-          ]} />
-      )}
+      {/* Heparina + Lavagem + Cálcio — mesma linha no desktop */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="space-y-2">
+          <Toggle label="Heparina" value={p.heparina ?? ""} onChange={v => set("heparina", v)}
+            options={[{ value: "nao", label: "Não" }, { value: "sim", label: "Sim" }]} />
+          {p.heparina === "sim" && (
+            <NumInput label="Dose (mL)" unit="mL" value={p.heparinaQtd ?? ""} onChange={v => set("heparinaQtd", v)}
+              placeholder="Ex: 1,0" hint="Bolus no início" />
+          )}
+        </div>
+        <Toggle label="Lavagem do sistema" value={p.lavagem ?? ""} onChange={v => set("lavagem", v)}
+          options={[{ value: "nao", label: "Não" }, { value: "sim", label: "Sim" }]} />
+        {!isUF && (
+          <Toggle label="Cálcio do dialisato" value={p.calcio ?? ""} onChange={v => set("calcio", v)}
+            options={[
+              { value: "padrao", label: "Padrão (3,0)" },
+              { value: "baixo", label: "Baixo Cálcio" },
+            ]} />
+        )}
+      </div>
 
       {/* Suplementos */}
       {!isUF && (
@@ -241,12 +241,12 @@ function FormCVVHDF({ p, set, peso }: { p: Record<string, string>; set: (k: stri
         <NumInput label="Reposição pós-filtro" unit="mL/h" value={p.reposicaoPos ?? ""} onChange={v => set("reposicaoPos", v)}
           placeholder="200" hint="Padrão: 200 mL/h" />
         <NumInput label="UF líquida" unit="mL/h" value={p.ufLiquida ?? ""} onChange={v => set("ufLiquida", v)}
-          placeholder="0 / 50 / 80" hint="Balanço hídrico alvo" />
+          placeholder="0 / 50..." hint="Balanço hídrico alvo" />
         <NumInput label="Temperatura" unit="°C" value={p.temperatura ?? ""} onChange={v => set("temperatura", v)}
           placeholder="38–40" hint="Protocolo: 38–40°C" />
         <Field label="Set / Capilar">
           <input value={p.set ?? ""} onChange={e => set("set", e.target.value)}
-            className="nc-input" placeholder="oXiris ou ST150" />
+            className="nc-input" placeholder="Ex: oXiris" />
         </Field>
       </div>
 
@@ -280,14 +280,14 @@ function FormCVVHDF({ p, set, peso }: { p: Record<string, string>; set: (k: stri
                 {fmtN(biphosyl)} {biphosyl !== null && <span className="text-xs font-normal" style={{ color: "var(--text3)" }}>mL/h</span>}
               </p>
             </div>
-            <NumInput label="CaCl₂ 10% em uso" unit="mL/h" value={p.infusaoCalcio ?? ""}
+            <NumInput label="CaCl₂ 10%, Compensação a" unit="%" value={p.infusaoCalcio ?? ""}
               onChange={v => set("infusaoCalcio", v)} placeholder="atual" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <NumInput label="Ca iônico sistêmico" unit="mmol/L" value={p.calcioSistemico ?? ""}
               onChange={v => set("calcioSistemico", v)} placeholder="1,0–1,2" hint="Sangue do paciente" />
             <NumInput label="Ca iônico pós-filtro" unit="mmol/L" value={p.calcioPosFiltro ?? ""}
-              onChange={v => set("calcioPosFiltro", v)} placeholder="0,25–0,35" hint="Leitura da máquina" />
+              onChange={v => set("calcioPosFiltro", v)} placeholder="0,25–0,40" hint="Leitura da máquina" />
           </div>
           <details className="text-xs">
             <summary className="cursor-pointer font-semibold" style={{ color: "var(--accent)" }}>
@@ -542,7 +542,7 @@ function gerarTexto(modalidade: Modalidade, dadosPac: Record<string, string>, p:
     if (anticoag === "regiocit") {
       const regVol = !isNaN(n(p.qb ?? "")) ? n(p.qb!) * 10 : null;
       linhas.push(`Anticoagulação: Citrato 0,5% (Regiocit) = 3 mmol/L${regVol ? `; Volume: ${regVol} mL/hora` : ""}`);
-      if (p.infusaoCalcio) linhas.push(`Compensação de cálcio atual: ${p.infusaoCalcio} mL/h (CaCl₂ 10%)`);
+      if (p.infusaoCalcio) linhas.push(`Compensação de cálcio atual: ${p.infusaoCalcio} % (CaCl₂ 10%)`);
     } else if (anticoag === "heparina") {
       const bolus = (!isNaN(peso) && p.hepBolus) ? Math.round(n(p.hepBolus) * peso) : null;
       linhas.push(`Anticoagulação: Heparina${bolus ? ` — bolus ${bolus} UI` : ""}`);
@@ -618,9 +618,10 @@ interface AbaTerapiaDialiticaProps {
   acompanhamento: AcompanhamentoNefro;
   paciente: Paciente;
   internacao: Internacao;
+  medico?: { nome: string; titulo?: string | null; crm?: string | null } | null;
 }
 
-export function AbaTerapiaDialitica({ acompanhamento, paciente, internacao }: AbaTerapiaDialiticaProps) {
+export function AbaTerapiaDialitica({ acompanhamento, paciente, internacao, medico }: AbaTerapiaDialiticaProps) {
   const [modalidade, setModalidade] = useState<Modalidade | "">("");
   const [salvando, setSalvando] = useState(false);
   const [copiado, setCopiado] = useState(false);
@@ -697,6 +698,13 @@ export function AbaTerapiaDialitica({ acompanhamento, paciente, internacao }: Ab
     setPrescricoesSalvas(p => p.filter(x => x.id !== id));
   }
 
+  function carregarNosInputs(p: { modalidade: string; dados?: { paciente?: Record<string, string>; prescricao?: Record<string, string> } }) {
+    if (p.dados?.paciente) setDadosPacienteState(prev => ({ ...prev, ...p.dados!.paciente }));
+    if (p.dados?.prescricao) setPrescricaoState(p.dados.prescricao);
+    setModalidade(p.modalidade as Modalidade);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   async function copiarTexto() {
     try {
       await navigator.clipboard.writeText(texto);
@@ -718,80 +726,165 @@ export function AbaTerapiaDialitica({ acompanhamento, paciente, internacao }: Ab
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const JsPDF = (jspdfMod?.jsPDF || win.jsPDF) as new (...args: any[]) => any;
     if (!JsPDF) return;
-    const doc = new JsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-    const W = 210, margin = 14;
-    let y = 14;
 
-    // Cabeçalho azul
-    doc.setFillColor(30, 58, 95);
-    doc.rect(margin, y, W - margin * 2, 10, "F");
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(11); doc.setFont("helvetica", "bold");
-    doc.text("FOLHA DE PRESCRIÇÃO", W / 2, y + 6.5, { align: "center" });
-    y += 10;
+    const doc = new JsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+    const W = 297, H = 210, margin = 8;
+    const contentW = W - margin * 2;
+    let y = margin;
 
-    doc.setFillColor(240, 244, 248);
-    doc.rect(margin, y, W - margin * 2, 8, "F");
-    doc.setTextColor(30, 58, 95);
-    doc.setFontSize(8.5); doc.setFont("helvetica", "normal");
-    doc.text("HOSPITAL DE CLÍNICAS — UFTM / EBSERH   ·   SERVIÇO DE NEFROLOGIA", W / 2, y + 5, { align: "center" });
-    y += 12;
-
-    // Dados do paciente
     const dataHoje = new Date().toLocaleDateString("pt-BR");
-    doc.setDrawColor(180, 200, 220);
-    doc.setFillColor(248, 250, 252);
-    doc.rect(margin, y, W - margin * 2, 16, "FD");
-    doc.setTextColor(40, 40, 40);
-    doc.setFontSize(8.5); doc.setFont("helvetica", "normal");
-    doc.text(`Nome do Paciente: ${dadosPaciente.nome || "—"}`, margin + 3, y + 5);
-    doc.text(`Registro Geral: ${dadosPaciente.rgHospitalar || "—"}`, margin + 3, y + 11);
-    doc.text(`Leito: ${dadosPaciente.leito || "—"}`, W / 2 + 10, y + 5);
-    doc.text(`Data: ${dataHoje}`, W / 2 + 10, y + 11);
-    y += 20;
+    const nomeMedico = medico
+      ? `${medico.titulo ? medico.titulo + ". " : ""}${medico.nome}${medico.crm ? " — " + medico.crm : ""}`
+      : null;
 
-    // Header da prescrição
+    // ── Cabeçalho azul ───────────────────────────────────────
     doc.setFillColor(30, 58, 95);
-    doc.rect(margin, y, W - margin * 2, 7, "F");
+    doc.rect(margin, y, contentW, 14, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(14); doc.setFont("helvetica", "bold");
+    doc.text("HOSPITAL DE CLÍNICAS — UFTM / EBSERH", W / 2, y + 6, { align: "center" });
+    doc.setFontSize(9); doc.setFont("helvetica", "normal");
+    doc.text("SERVIÇO DE NEFROLOGIA  ·  FOLHA DE PRESCRIÇÃO DE TERAPIA RENAL SUBSTITUTIVA", W / 2, y + 11.5, { align: "center" });
+    y += 17;
+
+    // ── Box dados do paciente — sem repetir no corpo ──────────
+    doc.setDrawColor(180, 200, 220);
+    doc.setFillColor(245, 248, 252);
+    doc.rect(margin, y, contentW, 20, "FD");
+    doc.setTextColor(20, 20, 60);
+    doc.setFontSize(9); doc.setFont("helvetica", "bold");
+    doc.text(`Paciente: ${dadosPaciente.nome || "—"}`, margin + 3, y + 6);
+    doc.text(`RG: ${dadosPaciente.rgHospitalar || "—"}`, margin + 120, y + 6);
+    doc.text(`Leito: ${dadosPaciente.leito || "—"}`, margin + 185, y + 6);
+    doc.text(`Data: ${dataHoje}`, margin + 240, y + 6);
+    doc.setFont("helvetica", "normal");
+    if (dadosPaciente.diagnostico) doc.text(`Diagnóstico: ${dadosPaciente.diagnostico}`, margin + 3, y + 13);
+    if (dadosPaciente.idade) doc.text(`Idade: ${dadosPaciente.idade} anos`, margin + 120, y + 13);
+    if (dadosPaciente.acesso) doc.text(`Acesso: ${dadosPaciente.acesso}`, margin + 185, y + 13);
+    y += 23;
+
+    // ── Área disponível entre cabeçalho e rodapé ─────────────
+    // Rodapé: assinatura médico (y=H-22) + linha rodapé (y=H-12)
+    const footerY = H - 10;
+    const assinaturaY = H - 20;
+    const maxY = assinaturaY - 3;
+
+    // ── Layout 2 colunas ─────────────────────────────────────
+    const colPrescW = Math.round(contentW * 0.52);
+    const colEnfW = contentW - colPrescW - 4;
+    const colEnfX = margin + colPrescW + 4;
+
+    // Cabeçalho coluna prescrição
+    doc.setFillColor(30, 58, 95);
+    doc.rect(margin, y, colPrescW, 8, "F");
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(9); doc.setFont("helvetica", "bold");
-    doc.text("PRESCRIÇÃO — TERAPIA RENAL SUBSTITUTIVA", W / 2, y + 4.8, { align: "center" });
-    y += 10;
+    doc.text("PRESCRIÇÃO MÉDICA", margin + colPrescW / 2, y + 5.5, { align: "center" });
 
-    // Linhas da prescrição
-    const linhas = texto.split("\n").filter(l => l.trim());
+    // Cabeçalho coluna enfermagem
+    doc.setFillColor(45, 90, 130);
+    doc.rect(colEnfX, y, colEnfW, 8, "F");
+    doc.text("REGISTRO DE ENFERMAGEM", colEnfX + colEnfW / 2, y + 5.5, { align: "center" });
+    y += 9;
+
+    // ── Coluna esquerda: só os parâmetros da prescrição ──────
+    // (nome, RG, leito já estão no cabeçalho — pular essas linhas)
+    const skipPrefixes = ["Paciente:", "RG:", "Leito:", "Data:"];
+    const linhas = texto.split("\n")
+      .filter(l => l.trim())
+      .filter(l => !skipPrefixes.some(p => l.startsWith(p)));
+
     doc.setTextColor(20, 20, 20);
+    let yPresc = y;
     linhas.forEach((linha, i) => {
-      if (y > 260) { doc.addPage(); y = 20; }
-      if (i === 0) {
+      if (yPresc > maxY - 6) return;
+      const isTitle = i === 0;
+      if (isTitle) {
         doc.setFont("helvetica", "bold");
-        doc.setFillColor(220, 232, 245);
-        doc.rect(margin, y - 1.5, W - margin * 2, 8, "F");
+        doc.setFillColor(210, 225, 242);
+        doc.rect(margin, yPresc - 1, colPrescW, 7.5, "F");
       } else {
         doc.setFont("helvetica", "normal");
-        if (i % 2 === 0) { doc.setFillColor(248, 250, 252); doc.rect(margin, y - 1.5, W - margin * 2, 7, "F"); }
+        if (i % 2 === 0) {
+          doc.setFillColor(248, 251, 255);
+          doc.rect(margin, yPresc - 1, colPrescW, 6.5, "F");
+        }
       }
       doc.setDrawColor(200, 215, 230);
-      doc.line(margin, y + 5, W - margin, y + 5);
+      doc.line(margin, yPresc + 5.5, margin + colPrescW, yPresc + 5.5);
       doc.setFontSize(9.5);
-      doc.text(linha, margin + 3, y + 3.5);
-      y += i === 0 ? 8 : 7;
+      doc.text(linha, margin + 3, yPresc + 3.5);
+      yPresc += isTitle ? 8 : 7;
+    });
+    doc.setDrawColor(150, 180, 210);
+    doc.rect(margin, y - 1, colPrescW, maxY - y + 1, "S");
+
+    // ── Coluna direita: Medicações → Intercorrências ──────────
+    doc.setDrawColor(150, 180, 210);
+    doc.rect(colEnfX, y - 1, colEnfW, maxY - y + 1, "S");
+
+    const alturaDisp = maxY - y;
+    const secEnf = [
+      { label: "MEDICAÇÕES ADMINISTRADAS", h: Math.round(alturaDisp * 0.40) },
+      { label: "INTERCORRÊNCIAS / OBSERVAÇÕES", h: Math.round(alturaDisp * 0.60) },
+    ];
+
+    let yEnf = y;
+    secEnf.forEach(sec => {
+      // Sub-cabeçalho
+      doc.setFillColor(220, 232, 245);
+      doc.rect(colEnfX, yEnf, colEnfW, 6, "F");
+      doc.setFont("helvetica", "bold"); doc.setFontSize(8.5); doc.setTextColor(30, 58, 95);
+      doc.text(sec.label, colEnfX + 3, yEnf + 4.2);
+
+      // Linhas de anotação
+      doc.setDrawColor(210, 220, 235);
+      const nLinhas = Math.floor((sec.h - 8) / 6.5);
+      for (let i = 0; i < nLinhas; i++) {
+        const ly = yEnf + 8 + i * 6.5;
+        if (ly < yEnf + sec.h - 1) doc.line(colEnfX + 3, ly, colEnfX + colEnfW - 3, ly);
+      }
+
+      yEnf += sec.h;
+      // Divisor entre seções
+      doc.setDrawColor(150, 180, 210);
+      doc.line(colEnfX, yEnf, colEnfX + colEnfW, yEnf);
     });
 
-    // Rodapé
-    y += 10;
-    doc.setDrawColor(30, 58, 95);
-    doc.line(margin, y, W - margin, y);
-    y += 5;
-    doc.setFontSize(8); doc.setFont("helvetica", "italic"); doc.setTextColor(100, 100, 100);
-    doc.text(`Gerado pelo NEFRO-UFTM em ${new Date().toLocaleString("pt-BR")}  ·  Nefrologia HC-UFTM/EBSERH — Uberaba, MG`, W / 2, y, { align: "center" });
-    y += 15;
-    doc.setDrawColor(150); doc.setFont("helvetica", "normal"); doc.setTextColor(40, 40, 40);
-    doc.line(margin + 10, y, margin + 90, y);
-    doc.setFontSize(8);
-    doc.text("Médico responsável / CRM", margin + 10, y + 4);
+    // ── Assinatura médico — centro, acima do rodapé ──────────
+    doc.setDrawColor(80, 100, 130);
+    const assX = W / 2;
+    doc.line(assX - 45, assinaturaY, assX + 45, assinaturaY);
+    doc.setFontSize(9); doc.setFont("helvetica", "normal"); doc.setTextColor(40, 40, 40);
+    doc.text(nomeMedico ?? "Médico responsável / CRM", assX, assinaturaY + 5, { align: "center" });
 
-    doc.save(`prescricao_${modalidade}_${(dadosPaciente.rgHospitalar || "paciente")}_${dataHoje.replace(/\//g, "-")}.pdf`);
+    // ── Rodapé ────────────────────────────────────────────────
+    doc.setDrawColor(30, 58, 95);
+    doc.line(margin, footerY, W - margin, footerY);
+    doc.setFontSize(7); doc.setFont("helvetica", "italic"); doc.setTextColor(100, 100, 100);
+    doc.text(
+      `Gerado pelo NEFRO-UFTM em ${new Date().toLocaleString("pt-BR")}  ·  Nefrologia HC-UFTM/EBSERH — Uberaba, MG`,
+      W / 2, footerY + 5, { align: "center" }
+    );
+
+    const blob = doc.output("blob");
+const url = URL.createObjectURL(blob);
+
+const iframe = document.createElement("iframe");
+iframe.style.display = "none";
+iframe.src = url;
+
+document.body.appendChild(iframe);
+
+iframe.onload = () => {
+    iframe.contentWindow?.focus();
+    iframe.contentWindow?.print();
+
+    setTimeout(() => {
+        URL.revokeObjectURL(url);
+        document.body.removeChild(iframe);
+    }, 2000);
+};
   }
 
   return (
@@ -856,6 +949,7 @@ export function AbaTerapiaDialitica({ acompanhamento, paciente, internacao }: Ab
                     <option>CDL subclávia</option>
                     <option>FAV</option>
                     <option>Permcath</option>
+                    <option>Prótese</option>
                   </select>
                 )}
               </div>
@@ -939,11 +1033,19 @@ export function AbaTerapiaDialitica({ acompanhamento, paciente, internacao }: Ab
                     <span className="text-xs" style={{ color: "var(--text3)" }}>{fmtDt(p.created_at)}</span>
                     <span style={{ color: "var(--text3)", fontSize: 10 }}>{prescricaoAberta === p.id ? "▴" : "▾"}</span>
                   </button>
-                  <button onClick={() => handleExcluir(p.id)}
-                    className="cursor-pointer text-xs transition hover:opacity-70"
-                    style={{ color: "var(--red)", background: "none", border: "none" }}>
-                    Excluir
-                  </button>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      onClick={() => carregarNosInputs(p as { modalidade: string; dados?: { paciente?: Record<string, string>; prescricao?: Record<string, string> } })}
+                      className="cursor-pointer text-xs font-bold transition hover:opacity-80"
+                      style={{ color: "var(--accent)", background: "var(--accent-dim)", border: "1px solid var(--accent)", borderRadius: "var(--nc-radius)", padding: "3px 10px" }}>
+                      ↑ Carregar nos campos
+                    </button>
+                    <button onClick={() => handleExcluir(p.id)}
+                      className="cursor-pointer text-xs transition hover:opacity-70"
+                      style={{ color: "var(--red)", background: "none", border: "none" }}>
+                      Excluir
+                    </button>
+                  </div>
                 </div>
                 {prescricaoAberta === p.id && p.texto_prescricao && (
                   <pre style={{ padding: "12px 16px", fontSize: 12, lineHeight: 1.7, color: "var(--text2)", background: "var(--bg2)", whiteSpace: "pre-wrap", fontFamily: "var(--mono)", margin: 0 }}>

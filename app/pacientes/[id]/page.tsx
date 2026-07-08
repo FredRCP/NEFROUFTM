@@ -17,7 +17,7 @@ export default async function DetalhePacientePage({
   if (!user) redirect("/login");
 
   const { data: medico } = await supabase
-    .from("medicos").select("nome, titulo").eq("id", user.id).maybeSingle();
+    .from("medicos").select("*").eq("id", user.id).maybeSingle();
 
   const { data: acompanhamento } = await supabase
     .from("acompanhamentos_nefro")
@@ -121,6 +121,7 @@ export default async function DetalhePacientePage({
           internacao={acompanhamento.internacao}
           evolucoes={evolucoes || []}
           usuarioId={user.id}
+          medico={medico}
         />
       </div>
     </div>

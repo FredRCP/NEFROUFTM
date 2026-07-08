@@ -24,10 +24,11 @@ interface FichaPacienteProps {
   internacao: Internacao;
   evolucoes: (Evolucao & { autor: Medico })[];
   usuarioId: string;
+  medico?: Medico | null;
 }
 
 export function FichaPaciente({
-  acompanhamento, paciente, internacao, evolucoes, usuarioId,
+  acompanhamento, paciente, internacao, evolucoes, usuarioId, medico,
 }: FichaPacienteProps) {
   const [abaAtiva, setAbaAtiva] = useState<AbaId>("resumo");
 
@@ -102,6 +103,7 @@ export function FichaPaciente({
               acompanhamento={acompanhamento}
               paciente={paciente}
               internacao={internacao}
+              medico={medico}
             />
           </div>
         )}
