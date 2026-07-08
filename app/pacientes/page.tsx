@@ -208,10 +208,10 @@ export default function PacientesPage() {
       <div style={{ background: "#1e3a5f", padding: "0 20px", height: 52, display: "flex", alignItems: "center", gap: 12 }}>
         <button onClick={() => router.push("/dashboard")}
           style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 14px 6px 10px", borderRadius: 999, background: "rgba(255,255,255,0.12)", color: "white", border: "1px solid rgba(255,255,255,0.18)", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "var(--font)" }}>
-          <span style={{ fontSize: 16 }}>←</span> Dashboard
+          <span style={{ fontSize: 16 }}>←</span> Tela Inicial
         </button>
-        <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 18 }}>/</span>
-        <span style={{ fontSize: 15, fontWeight: 800, color: "white" }}>Todos os Pacientes</span>
+        <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 18 }}></span>
+        <span style={{ fontSize: 15, fontWeight: 800, color: "white"}}>Lista Completa de Pacientes</span>
         <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginLeft: 4 }}>
           {carregando ? "..." : `${total} cadastrados · ${filtrados.length} exibidos`}
         </span>

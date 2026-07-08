@@ -49,7 +49,7 @@ export function AppHeader({ nomeMedico, titulo }: AppHeaderProps) {
           className="hidden sm:flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold text-white/75 transition hover:bg-white/10 hover:text-white"
           style={{ textDecoration: "none" }}
         >
-          📋 Pacientes
+          📋 Pacientes (Lista completa)
         </Link>
       </div>
 
