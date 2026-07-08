@@ -43,14 +43,15 @@ const ETIOLOGIAS_IRA_PRE_RENAL = [
   "Choque", "Diarréia", "Hipovolemia", "Sd_Cardiorrenal", "Sindrome_hepatorrenal", 
 ];
 const ETIOLOGIAS_IRA_RENAL = [
-  "NTA", "NIA", "Sepse",
-  "Glomerulonefrite", "Nefrite_lupica", "Nefropatia_por_IGA",
-  "GNRP_rapidamente_progressiva",
-  "SHU", "SHU_atipica", "PTT", "Eclampsia", "Sindrome_HELLP",
-  "Microangiopatia_trombotica_outras", "Crise_esclerodermica",
-  "Nefropatia_associada_contraste", "Nefrotoxicidade_medicamentosa",
-  "Rabdomiolise", "Lise_tumoral", "Leptospirose", "Gamopatia_monoclonal", "Mieloma_multiplo",
-  "Necrose_cortical",
+  "NTA", "NIA", "Nefropatia_associada_contraste", "Nefrite_lupica",
+  "Crise_esclerodermica", "Eclampsia", "Gamopatia_monoclonal",
+  "Glomerulonefrite", "GNRP_rapidamente_progressiva",
+  "Leptospirose", "Lise_tumoral",
+  "Microangiopatia_trombotica_outras", "Mieloma_multiplo",
+  "Necrose_cortical", "Nefropatia_por_IGA", "Nefrotoxicidade_medicamentosa",
+  
+  "PTT", "Rabdomiolise",
+  "Sepse", "SHU", "SHU_atipica", "Sindrome_HELLP",
 ];
 const ETIOLOGIAS_IRA_POS_RENAL = ["Bexigoma", "Estenose_uretra", "Estenose_ureter", "HPB", "Litíase", "Neo", "Outros" ];
 const ETIOLOGIAS_IRA_OUTRAS = ["IRA_multifatorial", "Pos_operatorio", "Outras_especificar"];
