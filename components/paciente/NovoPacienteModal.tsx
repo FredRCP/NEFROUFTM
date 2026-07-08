@@ -11,76 +11,76 @@ import { CATALOGO_LEITOS, getSetorByLeito, SETORES } from "@/types/database";
 import type { Paciente, Internacao } from "@/types/database";
 
 const COMORBIDADES_OPCOES = [
-   "AVC", "DAC", "DM", "Doenca_autoimune", "Doenca_de_Chagas", "Doenca_hematologica",
-  "Doenca_renal_policistica", "DPOC", "Etilismo", "Fibrilacao_atrial",
-  "HAS", "Hepatopatia", "HIV", "ICC", "Lupus", "Nefrolitiase",
-  "Neoplasia", "Obesidade", "Tabagismo", "Transplante_renal",
+  "AVC", "DAC", "DM", "Doenca_autoimune", "Doenca_de_Chagas", "Doenca_hematologica",
+ "Doenca_renal_policistica", "DPOC", "Etilismo", "Fibrilacao_atrial",
+ "HAS", "Hepatopatia", "HIV", "ICC", "Lupus", "Nefrolitiase",
+ "Neoplasia", "Obesidade", "Tabagismo", "Transplante_renal",
 ];
 
 const ETIOLOGIAS_DRC = [
-  "Congenita_hereditaria", "Doenca_renal_policistica", "Glomerulopatia",
-  "Indeterminada", "Nefrite_tubulo_intersticial",
-  "Nefroesclerose_hipertensiva", "Doenca_renal_diabetica",
-  "Nefropatia_por_refluxo", "Obstrutiva", "Outras",
+ "Congenita_hereditaria", "Doenca_renal_policistica", "Glomerulopatia",
+ "Indeterminada", "Nefrite_tubulo_intersticial",
+ "Nefroesclerose_hipertensiva", "Doenca_renal_diabetica",
+ "Nefropatia_por_refluxo", "Obstrutiva", "Outras",
 ];
 
 const DIAGNOSTICOS_PRINCIPAIS = [
-  { value: "Avaliacao_plasmaferese",label: "Avaliação para plasmaférese" },
-  { value: "DHE",                   label: "Distúrbio Hidroeletrolítico (DHE)" },
-  { value: "DRC_D",                 label: "DRC dialítica" },
-  { value: "IRA_sobre_DRC",         label: "DRC com IRA sobreposta" },
-  { value: "Glomerulopatias",       label: "Glomerulopatia" },
-  { value: "Intoxicacao_exogena",   label: "Intoxicação exógena" },
-  { value: "IRA",                   label: "IRA — Injúria Renal Aguda" },
-  { value: "Nefrolitiase",          label: "Nefrolitíase" },
-  { value: "Transplante_renal",     label: "Transplante renal" },
+ { value: "Avaliacao_plasmaferese",label: "Avaliação para plasmaférese" },
+ { value: "DHE",                   label: "Distúrbio Hidroeletrolítico (DHE)" },
+ { value: "DRC_D",                 label: "DRC dialítica" },
+ { value: "IRA_sobre_DRC",         label: "DRC com IRA sobreposta" },
+ { value: "Glomerulopatias",       label: "Glomerulopatia" },
+ { value: "Intoxicacao_exogena",   label: "Intoxicação exógena" },
+ { value: "IRA",                   label: "IRA — Injúria Renal Aguda" },
+ { value: "Nefrolitiase",          label: "Nefrolitíase" },
+ { value: "Transplante_renal",     label: "Transplante renal" },
 ];
 
 // ─── Etiologias por diagnóstico ───────────────────────────────────────────────
 
 // IRA — por topografia
 const ETIOLOGIAS_IRA_PRE_RENAL = [
-  "Choque", "Diarréia", "Hipovolemia", "Sd_Cardiorrenal", "Sindrome_hepatorrenal", 
+ "Choque", "Diarréia", "Hipovolemia", "Sd_Cardiorrenal", "Sindrome_hepatorrenal", 
 ];
 const ETIOLOGIAS_IRA_RENAL = [
-  "NTA", "NIA", "Nefropatia_associada_contraste", "Nefrite_lupica",
-  "Crise_esclerodermica", "Eclampsia", "Gamopatia_monoclonal",
-  "Glomerulonefrite", "GNRP_rapidamente_progressiva",
-  "Leptospirose", "Lise_tumoral",
-  "Microangiopatia_trombotica_outras", "Mieloma_multiplo",
-  "Necrose_cortical", "Nefropatia_por_IGA", "Nefrotoxicidade_medicamentosa",
-  
-  "PTT", "Rabdomiolise",
-  "Sepse", "SHU", "SHU_atipica", "Sindrome_HELLP",
+ "NTA", "NIA", "Nefropatia_associada_contraste", "Nefrite_lupica",
+ "Crise_esclerodermica", "Eclampsia", "Gamopatia_monoclonal",
+ "Glomerulonefrite", "GNRP_rapidamente_progressiva",
+ "Leptospirose", "Lise_tumoral",
+ "Microangiopatia_trombotica_outras", "Mieloma_multiplo",
+ "Necrose_cortical", "Nefropatia_por_IGA", "Nefrotoxicidade_medicamentosa",
+ 
+ "PTT", "Rabdomiolise",
+ "Sepse", "SHU", "SHU_atipica", "Sindrome_HELLP",
 ];
 const ETIOLOGIAS_IRA_POS_RENAL = ["Bexigoma", "Estenose_uretra", "Estenose_ureter", "HPB", "Litíase", "Neo", "Outros" ];
 const ETIOLOGIAS_IRA_OUTRAS = ["IRA_multifatorial", "Pos_operatorio", "Outras_especificar"];
 
 // Glomerulopatias
 const ETIOLOGIAS_GLOMERULOPATIA = [
-  "Eclampsia", "Gamopatia_monoclonal", "GESF", "GNMP_membranoproliferativa", "Nefrite_lupica",
-  "GNRP_rapidamente_progressiva", "Lesao_minima", "Microangiopatia_trombotica", "Nefropatia_por_IGA", 
-  "Nefropatia_membranosa", "PTT",
-  "SHU", "SHU_atipica",  "Sindrome_HELLP",
-  "Outras",
+ "Eclampsia", "Gamopatia_monoclonal", "GESF", "GNMP_membranoproliferativa", "Nefrite_lupica",
+ "GNRP_rapidamente_progressiva", "Lesao_minima", "Microangiopatia_trombotica", "Nefropatia_por_IGA", 
+ "Nefropatia_membranosa", "PTT",
+ "SHU", "SHU_atipica",  "Sindrome_HELLP",
+ "Outras",
 ];
 
 // DHE
 const SUBCAMPOS_DHE = [
-  "Hiponatremia", "Hipernatremia",
-  "Hipocalemia", "Hipercalemia",
-  "Hipomagnesemia", "Hipermagnesemia",
-  "Hipocalcemia", "Hipercalcemia",
-  "Hipofosfatemia", "Hiperfosfatemia",
-  "Acidose_metabolica", "Alcalose_metabolica",
-  "Acidose_respiratoria", "Alcalose_respiratoria",
+ "Hiponatremia", "Hipernatremia",
+ "Hipocalemia", "Hipercalemia",
+ "Hipomagnesemia", "Hipermagnesemia",
+ "Hipocalcemia", "Hipercalcemia",
+ "Hipofosfatemia", "Hiperfosfatemia",
+ "Acidose_metabolica", "Alcalose_metabolica",
+ "Acidose_respiratoria", "Alcalose_respiratoria",
 ];
 
 // Transplante renal
 const SUBCAMPOS_TX_RENAL = [
-  "Rejeicao_aguda", "Disfuncao_cronica_enxerto",
-  "Nefrotoxicidade_inibidor_calcineurina",
-  "Infeccao_BKV", "Infeccao_CMV", "Complicacoes_pos_tx", "Outras",
+ "Rejeicao_aguda", "Disfuncao_cronica_enxerto",
+ "Nefrotoxicidade_inibidor_calcineurina",
+ "Infeccao_BKV", "Infeccao_CMV", "Complicacoes_pos_tx", "Outras",
 ];
 
 // ─── Props ─────────────────────────────────────────────────────────────────
@@ -314,29 +314,39 @@ export function NovoPacienteModal({
 
   return (
     <div
-      className="fixed inset-0 z-100 flex items-center justify-center p-2 sm:p-4"
-      style={{ background: "rgba(0,0,0,0.45)" }}
+      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-4"
+      style={{ background: "rgba(0,0,0,0.55)" }}
       onClick={onClose}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[95vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl sm:max-h-[90vh]"
-        style={{ background: "var(--card)", boxShadow: "0 24px 64px rgba(0,0,0,0.25)" }}
+        className="flex w-full max-w-3xl flex-col overflow-hidden sm:rounded-2xl"
+        style={{
+          background: "var(--card)",
+          boxShadow: "0 -4px 32px rgba(0,0,0,0.2)",
+          height: "95dvh",
+          borderRadius: "20px 20px 0 0",
+        }}
       >
+        {/* Drag handle — só mobile */}
+        <div className="flex justify-center pt-2 pb-1 sm:hidden" style={{ background: "#1e3a5f" }}>
+          <div style={{ width: 40, height: 4, borderRadius: 99, background: "rgba(255,255,255,0.3)" }} />
+        </div>
+
         {/* Header */}
         <div
-          className="flex shrink-0 items-center justify-between px-5 py-3.5"
-          style={{ background: "#1e3a5f", borderBottom: "1px solid var(--border)" }}
+          className="flex shrink-0 items-center justify-between px-4 py-3 sm:px-5 sm:py-3.5"
+          style={{ background: "#1e3a5f", borderBottom: "1px solid rgba(255,255,255,0.1)" }}
         >
           <span className="text-sm font-extrabold text-white">
-            {ehEdicao ? `Editar paciente — ${paciente!.nome}` : "Novo paciente"}
+            {ehEdicao ? `Editar — ${paciente!.nome.split(" ")[0]}` : "Novo paciente"}
           </span>
           <button
             onClick={onClose}
-            className="cursor-pointer rounded-md px-3 py-1.5 text-sm font-semibold text-white transition hover:opacity-80"
-            style={{ background: "rgba(255,255,255,0.15)" }}
+            className="cursor-pointer rounded-full w-8 h-8 flex items-center justify-center text-white transition hover:opacity-80"
+            style={{ background: "rgba(255,255,255,0.15)", fontSize: 16 }}
           >
-            ✕ Fechar
+            ✕
           </button>
         </div>
 
@@ -497,7 +507,7 @@ export function NovoPacienteModal({
 
                 <div className="mt-3">
                   <label className={labelClass}>Comorbidades</label>
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-2">
                     {COMORBIDADES_OPCOES.map((c) => {
                       const ativa = comorbidades.includes(c);
                       return (
@@ -505,6 +515,7 @@ export function NovoPacienteModal({
                           type="button" key={c}
                           onClick={() => toggleComorbidade(c)}
                           className={`nc-chip cursor-pointer ${ativa ? "active" : ""}`}
+                          style={{ padding: "6px 12px", fontSize: 13, minHeight: 36 }}
                         >
                           {c.replace(/_/g, " ")}
                         </button>
@@ -614,7 +625,7 @@ export function NovoPacienteModal({
                         <div className="flex flex-wrap gap-1.5">
                           {ETIOLOGIAS_IRA_PRE_RENAL.map(e => (
                             <button key={e} type="button" onClick={() => toggleEtiologia(e)}
-                              className={`nc-chip text-xs ${etiologias.includes(e) ? "active" : ""}`}>
+                              className={`nc-chip cursor-pointer ${etiologias.includes(e) ? "active" : ""}`} style={{ padding: "6px 12px", fontSize: 13, minHeight: 36 }}>
                               {e.replace(/_/g, " ")}
                             </button>
                           ))}
@@ -626,7 +637,7 @@ export function NovoPacienteModal({
                         <div className="flex flex-wrap gap-1.5">
                           {ETIOLOGIAS_IRA_RENAL.map(e => (
                             <button key={e} type="button" onClick={() => toggleEtiologia(e)}
-                              className={`nc-chip text-xs ${etiologias.includes(e) ? "active" : ""}`}>
+                              className={`nc-chip cursor-pointer ${etiologias.includes(e) ? "active" : ""}`} style={{ padding: "6px 12px", fontSize: 13, minHeight: 36 }}>
                               {e.replace(/_/g, " ")}
                             </button>
                           ))}
@@ -638,7 +649,7 @@ export function NovoPacienteModal({
                         <div className="flex flex-wrap gap-1.5">
                           {ETIOLOGIAS_IRA_POS_RENAL.map(e => (
                             <button key={e} type="button" onClick={() => toggleEtiologia(e)}
-                              className={`nc-chip text-xs ${etiologias.includes(e) ? "active" : ""}`}>
+                              className={`nc-chip cursor-pointer ${etiologias.includes(e) ? "active" : ""}`} style={{ padding: "6px 12px", fontSize: 13, minHeight: 36 }}>
                               {e.replace(/_/g, " ")}
                             </button>
                           ))}
@@ -650,7 +661,7 @@ export function NovoPacienteModal({
                         <div className="flex flex-wrap gap-1.5">
                           {ETIOLOGIAS_IRA_OUTRAS.map(e => (
                             <button key={e} type="button" onClick={() => toggleEtiologia(e)}
-                              className={`nc-chip text-xs ${etiologias.includes(e) ? "active" : ""}`}>
+                              className={`nc-chip cursor-pointer ${etiologias.includes(e) ? "active" : ""}`} style={{ padding: "6px 12px", fontSize: 13, minHeight: 36 }}>
                               {e.replace(/_/g, " ")}
                             </button>
                           ))}
@@ -686,7 +697,7 @@ export function NovoPacienteModal({
                       <div className="flex flex-wrap gap-1.5">
                         {ETIOLOGIAS_GLOMERULOPATIA.map(e => (
                           <button key={e} type="button" onClick={() => toggleEtiologia(e)}
-                            className={`nc-chip text-xs ${etiologias.includes(e) ? "active" : ""}`}>
+                            className={`nc-chip cursor-pointer ${etiologias.includes(e) ? "active" : ""}`} style={{ padding: "6px 12px", fontSize: 13, minHeight: 36 }}>
                             {e.replace(/_/g, " ")}
                           </button>
                         ))}
@@ -706,7 +717,7 @@ export function NovoPacienteModal({
                       <div className="flex flex-wrap gap-1.5">
                         {SUBCAMPOS_DHE.map(e => (
                           <button key={e} type="button" onClick={() => toggleSubcampoDHE(e)}
-                            className={`nc-chip text-xs ${subcamposDHE.includes(e) ? "active" : ""}`}>
+                            className={`nc-chip cursor-pointer ${subcamposDHE.includes(e) ? "active" : ""}`} style={{ padding: "6px 12px", fontSize: 13, minHeight: 36 }}>
                             {e.replace(/_/g, " ")}
                           </button>
                         ))}
@@ -721,7 +732,7 @@ export function NovoPacienteModal({
                       <div className="flex flex-wrap gap-1.5">
                         {SUBCAMPOS_TX_RENAL.map(e => (
                           <button key={e} type="button" onClick={() => toggleSubcampoTx(e)}
-                            className={`nc-chip text-xs ${subcamposTxRenal.includes(e) ? "active" : ""}`}>
+                            className={`nc-chip cursor-pointer ${subcamposTxRenal.includes(e) ? "active" : ""}`} style={{ padding: "6px 12px", fontSize: 13, minHeight: 36 }}>
                             {e.replace(/_/g, " ")}
                           </button>
                         ))}
