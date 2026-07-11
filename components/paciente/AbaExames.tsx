@@ -138,7 +138,7 @@ const PERFIS: Record<string, { label: string; icon: string; numericos: string[];
     textos: ["eas","urocultura","imagem"],
   },
   ira: {
-    label: "IRA / UTI", icon: "🚨",
+    label: "IRA", icon: "🚨",
     numericos: ["creatinina","ureia","sodio","potassio","calcio","calcio_ionico","fosforo","ph","bic","lactato","albumina","tap","ttpa","hemoglobina","hematocrito","plaquetas","cpk","acido_urico"],
     textos: ["eas","urocultura","imagem"],
   },

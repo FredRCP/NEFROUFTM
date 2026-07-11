@@ -25,79 +25,99 @@ export type Setor =
   | "UTI_2"
   | "UTI_Coronariana"
   | "UTI_Geral"
-  | "UTI_Neo";
+  | "UTI_Neo"
+  | "UTR";
 
 export const SETORES: { value: Setor; label: string; grupo: GrandeGrupo }[] = [
-  { value: "Clinica_Cirurgica", label: "Clínica Cirúrgica", grupo: "Enfermarias" },
-  { value: "Clinica_Medica", label: "Clínica Médica", grupo: "Enfermarias" },
-  { value: "GO", label: "GO", grupo: "Enfermarias" },
-  { value: "Neuro", label: "Neurologia", grupo: "Enfermarias" },
-  { value: "Onco_Hemato", label: "Onco-Hemato", grupo: "Enfermarias" },
-  { value: "Ortopedia", label: "Ortopedia", grupo: "Enfermarias" },
-  { value: "Pediatria", label: "Pediatria", grupo: "Enfermarias" },
-  { value: "Pronto_Socorro", label: "Pronto-Socorro", grupo: "Pronto_Socorro" },
-  { value: "RPA", label: "RPA", grupo: "Enfermarias" },
-  { value: "UDIP", label: "UDIP", grupo: "Enfermarias" },
-  { value: "UTI_2", label: "UTI 2 / Neuro", grupo: "UTIs" },
-  { value: "UTI_Coronariana", label: "UTI Coronariana", grupo: "UTIs" },
-  { value: "UTI_Geral", label: "UTI Geral", grupo: "UTIs" },
-  { value: "UTI_Neo", label: "UTI Neo", grupo: "UTIs" },
+  { value: "Clinica_Cirurgica",  label: "Clínica Cirúrgica",  grupo: "Enfermarias"   },
+  { value: "Clinica_Medica",     label: "Clínica Médica",     grupo: "Enfermarias"   },
+  { value: "GO",                 label: "GO",                  grupo: "Enfermarias"   },
+  { value: "Neuro",              label: "Neurologia",          grupo: "Enfermarias"   },
+  { value: "Onco_Hemato",        label: "Onco-Hemato",         grupo: "Enfermarias"   },
+  { value: "Ortopedia",          label: "Ortopedia",           grupo: "Enfermarias"   },
+  { value: "Pediatria",          label: "Pediatria",           grupo: "Enfermarias"   },
+  { value: "Pronto_Socorro",     label: "Pronto-Socorro",      grupo: "Pronto_Socorro"},
+  { value: "RPA",                label: "RPA",                 grupo: "Enfermarias"   },
+  { value: "UDIP",               label: "UDIP",                grupo: "Enfermarias"   },
+  { value: "UTI_2",              label: "UTI 2 / Neuro",       grupo: "UTIs"          },
+  { value: "UTI_Coronariana",    label: "UTI Coronariana",     grupo: "UTIs"          },
+  { value: "UTI_Geral",          label: "UTI Geral",           grupo: "UTIs"          },
+  { value: "UTI_Neo",            label: "UTI Neo",             grupo: "UTIs"          },
+  { value: "UTR",                label: "UTR",                 grupo: "Enfermarias"   },
 ];
 
 export function getGrupoBySetor(setor: string): GrandeGrupo {
   return SETORES.find((s) => s.value === setor)?.grupo ?? "Enfermarias";
 }
 
-/**
- * Catálogo de leitos específicos. O médico escolhe o leito diretamente
- * (ex: "304 — Clínica Médica") e o setor/grande grupo são inferidos
- * automaticamente — não há campo de setor separado no cadastro.
- *
- * IMPORTANTE: números de GO, Ortopedia, Onco-Hemato e Pediatria ainda
- * não foram informados por Fred — usar placeholder único por setor
- * até a lista definitiva chegar (Seção 11 da especificação).
- */
 export interface LeitoCatalogo {
-  numero: string; // identificador exibido e salvo em enfermaria_leito
+  numero: string;
   setor: Setor;
 }
 
 export const CATALOGO_LEITOS: LeitoCatalogo[] = [
-  // UTIs — sem numeração informada; usar o próprio nome do setor como "leito"
-  { numero: "UTI Geral", setor: "UTI_Geral" },
-  { numero: "UTI 2", setor: "UTI_2" },
-  { numero: "UTI Coronariana", setor: "UTI_Coronariana" },
+  // ── UTI Geral: 224, 227, 229 ─────────────────────────────────────────────
+  { numero: "224", setor: "UTI_Geral" },
+  { numero: "227", setor: "UTI_Geral" },
+  { numero: "229", setor: "UTI_Geral" },
+
+  // ── UTI Coronariana: 225, 226, 231 ───────────────────────────────────────
+  { numero: "225", setor: "UTI_Coronariana" },
+  { numero: "226", setor: "UTI_Coronariana" },
+  { numero: "231", setor: "UTI_Coronariana" },
+
+  // ── UTI 2 / Neuro: 206, 207, 208 ─────────────────────────────────────────
+  { numero: "206", setor: "UTI_2" },
+  { numero: "207", setor: "UTI_2" },
+  { numero: "208", setor: "UTI_2" },
+
+  // ── UTI Neo ───────────────────────────────────────────────────────────────
   { numero: "UTI Neo", setor: "UTI_Neo" },
 
-  // Clínica Médica: 300-307
+  // ── UTR ───────────────────────────────────────────────────────────────────
+  { numero: "UTR", setor: "UTR" },
+
+  // ── Clínica Médica: 300-307 ───────────────────────────────────────────────
   ...["300", "301", "302", "303", "304", "305", "306", "307"].map((n) => ({
     numero: n,
     setor: "Clinica_Medica" as Setor,
   })),
 
-  // Clínica Cirúrgica: 308-316
-  ...Array.from({ length: 316 - 308 + 1 }, (_, i) => String(308 + i)).map((n) => ({
+  // ── Clínica Cirúrgica: 308-316 ────────────────────────────────────────────
+  ...Array.from({ length: 9 }, (_, i) => String(308 + i)).map((n) => ({
     numero: n,
     setor: "Clinica_Cirurgica" as Setor,
   })),
 
-  // Pendentes de numeração definitiva — placeholder genérico por setor
-  { numero: "GO (a definir)", setor: "GO" },
+  // ── Neurologia: 201-205 ───────────────────────────────────────────────────
+  ...["201", "202", "203", "204", "205"].map((n) => ({
+    numero: n,
+    setor: "Neuro" as Setor,
+  })),
+
+  // ── Onco-Hemato: 200-A até 200-E ─────────────────────────────────────────
+  ...["200-A", "200-B", "200-C", "200-D", "200-E"].map((n) => ({
+    numero: n,
+    setor: "Onco_Hemato" as Setor,
+  })),
+
+  // ── Pendentes de numeração definitiva ────────────────────────────────────
+  { numero: "GO (a definir)",        setor: "GO"        },
   { numero: "Ortopedia (a definir)", setor: "Ortopedia" },
-  { numero: "Onco-Hemato (a definir)", setor: "Onco_Hemato" },
   { numero: "Pediatria (a definir)", setor: "Pediatria" },
 
+  // ── Outros ───────────────────────────────────────────────────────────────
   { numero: "UDIP", setor: "UDIP" },
-  { numero: "RPA", setor: "RPA" },
+  { numero: "RPA",  setor: "RPA"  },
 
-  // Pronto-Socorro
+  // ── Pronto-Socorro ────────────────────────────────────────────────────────
   { numero: "Código / Sala Vermelha", setor: "Pronto_Socorro" },
-  { numero: "Corredor", setor: "Pronto_Socorro" },
-  { numero: "100", setor: "Pronto_Socorro" },
-  { numero: "105", setor: "Pronto_Socorro" },
-  { numero: "107", setor: "Pronto_Socorro" },
-  { numero: "108", setor: "Pronto_Socorro" },
-  { numero: "109", setor: "Pronto_Socorro" },
+  { numero: "Corredor",               setor: "Pronto_Socorro" },
+  { numero: "100",                    setor: "Pronto_Socorro" },
+  { numero: "105",                    setor: "Pronto_Socorro" },
+  { numero: "107",                    setor: "Pronto_Socorro" },
+  { numero: "108",                    setor: "Pronto_Socorro" },
+  { numero: "109",                    setor: "Pronto_Socorro" },
 ];
 
 /** Dado o número do leito escolhido, retorna o setor correspondente. */
@@ -108,14 +128,8 @@ export function getSetorByLeito(numeroLeito: string): Setor | undefined {
 export type DiagnosticoPrincipal = "IRA" | "DRC_D" | "IRA_sobre_DRC";
 
 export type Etiologia =
-  | "Sepse"
-  | "Hipovolemia"
-  | "NTA"
-  | "Obstrucao"
-  | "Glomerulonefrite"
-  | "Sindrome_hepatorrenal"
-  | "Cardiorrenal"
-  | "Outras";
+  | "Sepse" | "Hipovolemia" | "NTA" | "Obstrucao" | "Glomerulonefrite"
+  | "Sindrome_hepatorrenal" | "Cardiorrenal" | "Outras";
 
 export type SituacaoDialitica = "hd_hoje" | "hd_amanha" | "sem_hd_programada";
 
@@ -209,7 +223,6 @@ export interface Evolucao {
   updated_at: string;
 }
 
-/** View consolidada usada no dashboard: paciente + internação + acompanhamento */
 export interface PacienteCard {
   acompanhamento: AcompanhamentoNefro;
   paciente: Paciente;
