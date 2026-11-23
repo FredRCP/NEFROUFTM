@@ -6,16 +6,15 @@ import { AbaResumo } from "./AbaResumo";
 import { AbaEvolucoes } from "./AbaEvolucoes";
 import { AbaExames } from "./AbaExames";
 import { AbaTerapiaDialitica } from "./AbaTerapiaDialitica";
-import { AbaTimeline } from "./AbaTimeline";
 
-type AbaId = "resumo" | "evolucoes" | "exames" | "dialise" | "timeline";
+// Timeline removida: o histórico já aparece em Evoluções (coluna "Histórico").
+type AbaId = "resumo" | "evolucoes" | "exames" | "dialise";
 
 const ABAS: { id: AbaId; label: string }[] = [
   { id: "resumo", label: "Resumo" },
   { id: "evolucoes", label: "Evoluções" },
   { id: "exames", label: "Exames" },
-  { id: "dialise", label: "Terapia Dialítica" },
-  { id: "timeline", label: "Timeline" },
+  { id: "dialise", label: "Diálise" },
 ];
 
 interface FichaPacienteProps {
@@ -33,10 +32,8 @@ export function FichaPaciente({
   const [abaAtiva, setAbaAtiva] = useState<AbaId>("resumo");
 
   return (
-    // height: 100% herda o restante da viewport definido no page.tsx
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-
-      {/* Abas fixas — sem scroll horizontal */}
+      {/* Abas */}
       <div
         style={{
           flexShrink: 0,
@@ -72,7 +69,7 @@ export function FichaPaciente({
         ))}
       </div>
 
-      {/* Conteúdo — scroll próprio, exceto Evoluções que gerencia o próprio layout */}
+      {/* Conteúdo */}
       <div style={{ flex: 1, overflow: abaAtiva === "evolucoes" ? "hidden" : "auto" }}>
         {abaAtiva === "resumo" && (
           <div style={{ padding: "20px 24px" }}>
@@ -103,13 +100,8 @@ export function FichaPaciente({
               acompanhamento={acompanhamento}
               paciente={paciente}
               internacao={internacao}
-              medico={medico}
+              medico={medico ?? null}
             />
-          </div>
-        )}
-        {abaAtiva === "timeline" && (
-          <div style={{ padding: "20px 24px" }}>
-            <AbaTimeline acompanhamento={acompanhamento} evolucoes={evolucoes} />
           </div>
         )}
       </div>

@@ -1,8 +1,15 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import type { Paciente, Internacao, AcompanhamentoNefro } from "@/types/database";
 import { salvarPrescricao, buscarPrescricoes, excluirPrescricao } from "@/lib/actions/prescricoes";
+import { montarDadosImpressao } from "@/lib/printing/montarImpressao";
+import { abrirJanelaImpressao } from "@/lib/printing/abrirJanelaImpressao";
+import { gerarLinhasHD } from "@/lib/printing/imprimirHD";
+import { gerarLinhasCVVHDF } from "@/lib/printing/imprimirCVVHDF";
+import { gerarLinhasDP } from "@/lib/printing/imprimirDP";
+import { gerarLinhasTPE } from "@/lib/printing/imprimirTPE";
+import type { LinhasPrescricao } from "@/lib/printing/tipos";
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 
@@ -88,29 +95,29 @@ function FormHD({ p, set }: { p: Record<string, string>; set: (k: string, v: str
       <Toggle label="Modalidade" value={p.submodalidade ?? ""} onChange={v => set("submodalidade", v)}
         options={[
           { value: "HD Clássica", label: "HD Clássica" },
-          { value: "HD Estendida", label: "HD Estendida (SLED)" },
+          { value: "HD Estendida", label: "HD Estendida" },
           { value: "Ultrafiltração isolada", label: "Ultrafiltração isolada" },
         ]} />
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <NumInput label="Tempo" unit="h" value={p.tempoH ?? ""} onChange={v => set("tempoH", v)}
-          placeholder={p.submodalidade === "HD Estendida" ? "6–12" : "2–4"} />
+          placeholder={p.submodalidade === "HD Estendida" ? "ex.: 8" : "ex.: 4"} />
         <NumInput label="Ultrafiltração (perdas)" unit="mL" value={p.ufMl ?? ""} onChange={v => set("ufMl", v)}
-          placeholder="0 = sem perdas" />
+          placeholder="ex.: 0" />
         <NumInput label="Fluxo de sangue (Qb)" unit="mL/min" value={p.qb ?? ""} onChange={v => set("qb", v)}
-          placeholder={p.submodalidade === "HD Estendida" ? "150–200" : "250–450"} />
+          placeholder={p.submodalidade === "HD Estendida" ? "ex.: 180" : "ex.: 300"} />
         {/* Qd — oculto na UF isolada */}
         {!isUF && (
           <NumInput label="Fluxo de dialisato (Qd)" unit="mL/min" value={p.qd ?? ""} onChange={v => set("qd", v)}
-            placeholder={p.submodalidade === "HD Estendida" ? "300" : "500-800"} />
+            placeholder={p.submodalidade === "HD Estendida" ? "ex.: 300" : "ex.: 500"} />
         )}
         {/* Na — oculto na UF isolada */}
         {!isUF && (
           <NumInput label="Sódio (Na)" unit="mEq/L" value={p.sodio ?? ""} onChange={v => set("sodio", v)}
-            placeholder="135–150" />
+            placeholder="ex.: 140" />
         )}
         <NumInput label="Temperatura" unit="°C" value={p.temperatura ?? ""} onChange={v => set("temperatura", v)}
-          placeholder="35–37" />
+          placeholder="ex.: 36,5" />
         {!isUF && (
           <Field label="Capilar">
             <input value={p.capilar ?? ""} onChange={e => set("capilar", e.target.value)}
@@ -134,13 +141,19 @@ function FormHD({ p, set }: { p: Record<string, string>; set: (k: string, v: str
               placeholder="Ex: 1,0" hint="Bolus no início" />
           )}
         </div>
-        <Toggle label="Lavagem do sistema" value={p.lavagem ?? ""} onChange={v => set("lavagem", v)}
+        <div className="space-y-2">
+          <Toggle label="Lavagem do sistema" value={p.lavagem ?? ""} onChange={v => set("lavagem", v)}
           options={[{ value: "nao", label: "Não" }, { value: "sim", label: "Sim" }]} />
+          {p.lavagem === "sim" && (
+            <NumInput label="Soro a cada 15 min" unit="mL" value={p.lavagemMl ?? ""} onChange={v => set("lavagemMl", v)}
+              placeholder="ex.: 50" hint="Soro fisiológico" />
+          )}
+        </div>
         {!isUF && (
           <Toggle label="Cálcio do dialisato" value={p.calcio ?? ""} onChange={v => set("calcio", v)}
             options={[
               { value: "padrao", label: "Padrão (3,0)" },
-              { value: "baixo", label: "Baixo Cálcio" },
+              { value: "baixo", label: "Baixo (2,5)" },
             ]} />
         )}
       </div>
@@ -234,19 +247,19 @@ function FormCVVHDF({ p, set, peso }: { p: Record<string, string>; set: (k: stri
       {/* Parâmetros */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <NumInput label="Fluxo de sangue (Qb)" unit="mL/min" value={p.qb ?? ""} onChange={v => set("qb", v)}
-          placeholder="100–130" hint="Protocolo HC-UFTM: 100–130" />
+          placeholder="ex.: 120" />
         <NumInput label="Dose total" unit="mL/h" value={p.dose ?? ""} onChange={v => set("dose", v)}
-          placeholder={doseAlvoMin ? `${doseAlvoMin}–${doseAlvoMax}` : "Ex: 1800"}
+          placeholder="ex.: 1800"
           hint={dosePorKg ? `≈ ${dosePorKg} mL/kg/h` : doseAlvoMin ? `Alvo: ${doseAlvoMin}–${doseAlvoMax} mL/h` : "Alvo: 30–35 mL/kg/h (sepse)"} />
         <NumInput label="Reposição pós-filtro" unit="mL/h" value={p.reposicaoPos ?? ""} onChange={v => set("reposicaoPos", v)}
           placeholder="200" hint="Padrão: 200 mL/h" />
         <NumInput label="UF líquida" unit="mL/h" value={p.ufLiquida ?? ""} onChange={v => set("ufLiquida", v)}
-          placeholder="0 / 50..." hint="Balanço hídrico alvo" />
+          placeholder="ex.: 50" hint="Balanço hídrico alvo" />
         <NumInput label="Temperatura" unit="°C" value={p.temperatura ?? ""} onChange={v => set("temperatura", v)}
-          placeholder="38–40" hint="Protocolo: 38–40°C" />
+          placeholder="ex.: 38,5" />
         <Field label="Set / Capilar">
           <input value={p.set ?? ""} onChange={e => set("set", e.target.value)}
-            className="nc-input" placeholder="Ex: oXiris" />
+            className="nc-input" placeholder="ex.: oXiris" />
         </Field>
       </div>
 
@@ -280,14 +293,14 @@ function FormCVVHDF({ p, set, peso }: { p: Record<string, string>; set: (k: stri
                 {fmtN(biphosyl)} {biphosyl !== null && <span className="text-xs font-normal" style={{ color: "var(--text3)" }}>mL/h</span>}
               </p>
             </div>
-            <NumInput label="CaCl₂ 10%, Compensação a" unit="%" value={p.infusaoCalcio ?? ""}
+            <NumInput label="CaCl₂ 10% em uso" unit="mL/h" value={p.infusaoCalcio ?? ""}
               onChange={v => set("infusaoCalcio", v)} placeholder="atual" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <NumInput label="Ca iônico sistêmico" unit="mmol/L" value={p.calcioSistemico ?? ""}
-              onChange={v => set("calcioSistemico", v)} placeholder="1,0–1,2" hint="Sangue do paciente" />
+              onChange={v => set("calcioSistemico", v)} placeholder="ex.: 1,1" hint="Sangue do paciente" />
             <NumInput label="Ca iônico pós-filtro" unit="mmol/L" value={p.calcioPosFiltro ?? ""}
-              onChange={v => set("calcioPosFiltro", v)} placeholder="0,25–0,40" hint="Leitura da máquina" />
+              onChange={v => set("calcioPosFiltro", v)} placeholder="ex.: 0,3" hint="Leitura da máquina" />
           </div>
           <details className="text-xs">
             <summary className="cursor-pointer font-semibold" style={{ color: "var(--accent)" }}>
@@ -428,13 +441,13 @@ function FormTPE({ p, set, peso }: { p: Record<string, string>; set: (k: string,
         <NumInput label="Hematócrito" unit="%" value={p.hematocrito ?? ""} onChange={v => set("hematocrito", v)}
           placeholder="Ex: 30" obrigatorio />
         <NumInput label="Fluxo de sangue (Qb)" unit="mL/min" value={p.qb ?? ""} onChange={v => set("qb", v)}
-          placeholder="100–150" />
+          placeholder="ex.: 120" />
         <NumInput label="Temperatura" unit="°C" value={p.temperatura ?? ""} onChange={v => set("temperatura", v)}
-          placeholder="38–40" hint="Aquecedor: Thermax" />
+          placeholder="ex.: 38,5" hint="Aquecedor: Thermax" />
         <NumInput label="Duração estimada" unit="h" value={p.duracao ?? ""} onChange={v => set("duracao", v)}
-          placeholder="2–3" hint="Depende do VTT" />
+          placeholder="ex.: 2,5" hint="Depende do VTT" />
         <NumInput label="Número de sessões" value={p.nSessoes ?? ""} onChange={v => set("nSessoes", v)}
-          placeholder="Depende da patologia" />
+          placeholder="ex.: 5" />
       </div>
 
       {/* Anticoagulação */}
@@ -491,127 +504,6 @@ function FormTPE({ p, set, peso }: { p: Record<string, string>; set: (k: string,
   );
 }
 
-// ─── Gerador de texto de prescrição ──────────────────────────────────────────
-
-function gerarTexto(modalidade: Modalidade, dadosPac: Record<string, string>, p: Record<string, string>): string {
-  const peso = n(dadosPac.peso ?? "");
-  const ht = n(p.hematocrito ?? "");
-  const vs = (!isNaN(peso)) ? Math.round(peso * 70) : null;
-  const vp = (vs !== null && !isNaN(ht)) ? Math.round(vs * (1 - ht / 100)) : null;
-  const vtt = vp !== null ? Math.round(vp * 1.5) : null;
-
-  const linhas: string[] = [
-    `Modalidade de TSR: ${
-      modalidade === "HD" ? (p.submodalidade ?? "HD") :
-      modalidade === "CVVHDF" ? "CVVHDF" :
-      modalidade === "DP" ? "DPI" : "TPE — Plasmaférese"
-    }`,
-  ];
-
-  if (modalidade === "HD") {
-    if (p.tempoH)     linhas.push(`Tempo: ${p.tempoH}h`);
-    const uf = p.ufMl ? (n(p.ufMl) === 0 ? "Sem perdas" : `${p.ufMl} mL`) : null;
-    if (uf)           linhas.push(`UF: ${uf}`);
-    const hepStr = p.heparina === "sim"
-      ? `${p.heparinaQtd ? p.heparinaQtd + " mL" : "Sim"}`
-      : "Sem heparina";
-    linhas.push(`Heparina: ${hepStr}`);
-    if (p.lavagem)    linhas.push(`Lavagem do sistema: ${p.lavagem === "sim" ? "Sim" : "Não"}`);
-    if (p.qb)         linhas.push(`Fluxo de Sangue: ${p.qb} mL/min`);
-    if (p.qd)         linhas.push(`Fluxo de Dialisato: ${p.qd} mL/min`);
-    if (p.sodio)      linhas.push(`Na: ${p.sodio}`);
-    if (p.temperatura)linhas.push(`Temperatura: ${p.temperatura}°C`);
-    if (p.capilar)    linhas.push(`Capilar: ${p.capilar}`);
-    if (p.bic)        linhas.push(`BIC: ${p.bic}`);
-    const calcStr = p.calcio === "baixo" ? "Baixo cálcio (1,25 mEq/L)" : "Cálcio padrão (3,0 mEq/L)";
-    linhas.push(`Cálcio do dialisato: ${calcStr}`);
-    if (p.glicose === "sim") linhas.push(`Glicose 50% 2 amp ACM`);
-    if (p.nacl === "sim")    linhas.push(`NaCl 20% 10 mL/hora ACM`);
-    if (p.outros?.trim())    linhas.push(`Outros: ${p.outros.trim()}`);
-  }
-
-  if (modalidade === "CVVHDF") {
-    if (!isNaN(peso) && p.hematocrito) linhas.push(`Hematócrito: ${p.hematocrito}%   Peso: ${dadosPac.peso} kg`);
-    if (p.qb) linhas.push(`Fluxo de Sangue: ${p.qb} mL/min`);
-    if (p.dose) {
-      const doseKg = (!isNaN(peso) && !isNaN(n(p.dose))) ? (n(p.dose) / peso).toFixed(1) : null;
-      linhas.push(`Dose: ${p.dose} mL/hora${doseKg ? ` (≈ ${doseKg} mL/kg/h)` : ""}`);
-    }
-    if (p.set) linhas.push(`SET: ${p.set}`);
-    const anticoag = p.anticoag ?? "regiocit";
-    if (anticoag === "regiocit") {
-      const regVol = !isNaN(n(p.qb ?? "")) ? n(p.qb!) * 10 : null;
-      linhas.push(`Anticoagulação: Citrato 0,5% (Regiocit) = 3 mmol/L${regVol ? `; Volume: ${regVol} mL/hora` : ""}`);
-      if (p.infusaoCalcio) linhas.push(`Compensação de cálcio atual: ${p.infusaoCalcio} % (CaCl₂ 10%)`);
-    } else if (anticoag === "heparina") {
-      const bolus = (!isNaN(peso) && p.hepBolus) ? Math.round(n(p.hepBolus) * peso) : null;
-      linhas.push(`Anticoagulação: Heparina${bolus ? ` — bolus ${bolus} UI` : ""}`);
-    } else {
-      linhas.push(`Sem anticoagulação`);
-    }
-    if (p.reposicaoPos) linhas.push(`Reposição pós-filtro: ${p.reposicaoPos} mL/hora`);
-    if (!isNaN(n(p.reposicaoPos ?? "")) && !isNaN(n(p.qb ?? ""))) {
-      const biphosyl = n(p.dose ?? "") - n(p.reposicaoPos ?? "") - n(p.qb ?? "") * 10;
-      if (!isNaN(biphosyl)) linhas.push(`Dialisato (Biphosyl): ${Math.round(biphosyl)} mL/hora`);
-    }
-    if (p.ufLiquida) linhas.push(`Ultrafiltração efetiva: ${p.ufLiquida} mL/hora`);
-    if (p.temperatura) linhas.push(`Temperatura: ${p.temperatura}°C`);
-    if (p.outros?.trim()) linhas.push(`Outros: ${p.outros.trim()}`);
-  }
-
-  if (modalidade === "DP") {
-    if (p.solucao) linhas.push(`Solução: Glicose ${p.solucao}`);
-    if (p.trocas)  linhas.push(`Trocas: ${p.trocas}`);
-    if (p.tInfusao) linhas.push(`Tempo de Infusão: ${p.tInfusao} min`);
-    if (p.tPermanencia) linhas.push(`Tempo de Permanência: ${p.tPermanencia} min`);
-    if (p.tDrenagem) linhas.push(`Tempo de Drenagem: ${p.tDrenagem} min`);
-    if (p.volMlKg) {
-      const volTotal = (!isNaN(peso) && !isNaN(n(p.volMlKg))) ? Math.round(peso * n(p.volMlKg)) : null;
-      linhas.push(`Volume: ${p.volMlKg} mL/kg${volTotal ? ` (${volTotal} mL/ciclo)` : ""}`);
-    }
-    linhas.push(`Heparina: ${p.heparina === "sim" ? "500 UI/L se fibrina" : "Não"}`);
-    if (p.outros?.trim()) linhas.push(`Outros: ${p.outros.trim()}`);
-  }
-
-  if (modalidade === "TPE") {
-    if (!isNaN(peso)) {
-      linhas.push(`Peso: ${dadosPac.peso} kg   Hematócrito: ${p.hematocrito ?? "—"}%`);
-      if (vtt !== null) linhas.push(`Volume Total de Troca (VTT): ${vtt} mL`);
-      const set = peso < 9 ? "—" : peso <= 29 ? "TPE 1000 (9–29 kg)" : "TPE 2000 (>30 kg)";
-      linhas.push(`SET: ${set}`);
-    }
-    if (p.qb) linhas.push(`Fluxo de Sangue: ${p.qb} mL/min`);
-    if (p.temperatura) linhas.push(`Temperatura: ${p.temperatura}°C   Aquecedor: Thermax`);
-    if (p.duracao) linhas.push(`Duração estimada: ${p.duracao}h`);
-    if (p.nSessoes) linhas.push(`Número de sessões: ${p.nSessoes}`);
-    const anticoag = p.anticoag ?? "heparina";
-    if (anticoag === "heparina") {
-      const hepBol = !isNaN(peso) ? Math.round(peso * 70) : null;
-      const hepCont = !isNaN(peso) ? Math.round(peso * 15) : null;
-      linhas.push(`Anticoagulação: Heparina — ${hepBol ? `Bolus: ${hepBol} UI; ` : ""}Contínua: ${hepCont ?? "—"} UI/h`);
-    } else {
-      linhas.push(`Anticoagulação: Citrato`);
-    }
-    const repMap: Record<string, string> = {
-      albumina4: "Albumina 4% (SF 800 mL + 4 fr Albumina 20%)",
-      albumina5: "Albumina 5% (SF 750 mL + 5 fr Albumina 20%)",
-      pfc: "Plasma Fresco Congelado",
-      misto: "Misto: 50% PFC + 50% Albumina",
-    };
-    if (p.reposicao) linhas.push(`Reposição: ${repMap[p.reposicao] ?? p.reposicao}`);
-    if (p.outros?.trim()) linhas.push(`Outros: ${p.outros.trim()}`);
-  }
-
-  const pacStr = [
-    dadosPac.nome ? `Paciente: ${dadosPac.nome}` : null,
-    dadosPac.rgHospitalar ? `RG: ${dadosPac.rgHospitalar}` : null,
-    dadosPac.leito ? `Leito: ${dadosPac.leito}` : null,
-    dadosPac.diagnostico ? `Diagnóstico: ${dadosPac.diagnostico}` : null,
-  ].filter(Boolean);
-
-  return [...pacStr, "", ...linhas].join("\n");
-}
-
 // ─── Componente principal ─────────────────────────────────────────────────────
 
 interface AbaTerapiaDialiticaProps {
@@ -624,10 +516,9 @@ interface AbaTerapiaDialiticaProps {
 export function AbaTerapiaDialitica({ acompanhamento, paciente, internacao, medico }: AbaTerapiaDialiticaProps) {
   const [modalidade, setModalidade] = useState<Modalidade | "">("");
   const [salvando, setSalvando] = useState(false);
-  const [copiado, setCopiado] = useState(false);
-  const [prescricoesSalvas, setPrescricoesSalvas] = useState<{ id: string; modalidade: string; created_at: string; texto_prescricao?: string }[]>([]);
-  const [carregouHistorico, setCarregouHistorico] = useState(false);
-  const [verHistorico, setVerHistorico] = useState(false);
+  type PrescricaoSalva = { id: string; modalidade: string; created_at: string; texto_prescricao?: string; dados?: { paciente?: Record<string, string>; prescricao?: Record<string, string> } };
+  const [prescricoesSalvas, setPrescricoesSalvas] = useState<PrescricaoSalva[]>([]);
+  const [versaoLista, setVersaoLista] = useState(0);
   const [prescricaoAberta, setPrescricaoAberta] = useState<string | null>(null);
 
   const [dadosPaciente, setDadosPacienteState] = useState<Record<string, string>>(() => {
@@ -647,8 +538,9 @@ export function AbaTerapiaDialitica({ acompanhamento, paciente, internacao, medi
       idade,
       sexo: paciente.sexo ?? "",
       acesso: "",
+      acessoLado: "",
       leito: internacao.enfermaria_leito
-        ? `${internacao.setor.replace(/_/g, " ")} — leito ${internacao.enfermaria_leito}`
+        ? `${internacao.setor.replace(/_/g, " ")} — ${internacao.enfermaria_leito}`
         : internacao.setor.replace(/_/g, " "),
       diagnostico: acompanhamento.diagnostico_principal?.replace(/_/g, " ") ?? "",
     };
@@ -659,27 +551,52 @@ export function AbaTerapiaDialitica({ acompanhamento, paciente, internacao, medi
   function setPaciente(k: string, v: string) { setDadosPacienteState(p => ({ ...p, [k]: v })); }
   function setParam(k: string, v: string) { setPrescricaoState(p => ({ ...p, [k]: v })); }
 
+  useEffect(() => {
+    let ativo = true;
+    buscarPrescricoes(acompanhamento.id).then(r => {
+      if (ativo && r.sucesso) setPrescricoesSalvas(r.dados as PrescricaoSalva[]);
+    });
+    return () => { ativo = false; };
+  }, [acompanhamento.id, versaoLista]);
+
   const modalidadeCfg = MODALIDADES.find(m => m.value === modalidade);
   const pesoBrigatorio = modalidadeCfg?.pesoBrigatorio ?? false;
   const peso = n(dadosPaciente.peso ?? "");
   const pesoValido = !pesoBrigatorio || (!isNaN(peso) && peso > 0);
 
+  const acessoBase = modalidade === "DP" ? "Cateter Tenckhoff" : dadosPaciente.acesso;
+  const acessoCompleto = [acessoBase, modalidade === "DP" ? "" : dadosPaciente.acessoLado].filter(Boolean).join(" — ");
+
+  // Fonte única: a prévia na tela, o texto salvo e a impressão usam estas mesmas linhas
+  const linhasPrescricao = useMemo<LinhasPrescricao[]>(() => {
+    if (!modalidade) return [];
+    const pesoNum = parseFloat(dadosPaciente.peso?.replace(",", ".") ?? "");
+    const pesoVal = isNaN(pesoNum) ? null : pesoNum;
+    if (modalidade === "HD") return gerarLinhasHD(prescricao);
+    if (modalidade === "CVVHDF") return gerarLinhasCVVHDF(prescricao, pesoVal);
+    if (modalidade === "DP") return gerarLinhasDP(prescricao, pesoVal);
+    return gerarLinhasTPE(prescricao, pesoVal);
+  }, [modalidade, dadosPaciente.peso, prescricao]);
+
   const texto = useMemo(() => {
     if (!modalidade) return "";
-    return gerarTexto(modalidade as Modalidade, dadosPaciente, prescricao);
-  }, [modalidade, dadosPaciente, prescricao]);
-
-  async function carregarHistorico() {
-    if (carregouHistorico) return;
-    const r = await buscarPrescricoes(acompanhamento.id);
-    if (r.sucesso) setPrescricoesSalvas(r.dados as { id: string; modalidade: string; created_at: string; texto_prescricao?: string }[]);
-    setCarregouHistorico(true);
-  }
+    const cabecalho = [
+      dadosPaciente.nome ? `Paciente: ${dadosPaciente.nome}` : null,
+      dadosPaciente.rgHospitalar ? `RG: ${dadosPaciente.rgHospitalar}` : null,
+      dadosPaciente.idade ? `Idade: ${dadosPaciente.idade} anos` : null,
+      dadosPaciente.leito ? `Leito: ${dadosPaciente.leito}` : null,
+      dadosPaciente.diagnostico ? `Diagnóstico: ${dadosPaciente.diagnostico}` : null,
+      acessoCompleto ? `Acesso vascular: ${acessoCompleto}` : null,
+      medico?.nome ? `Prescritor: ${[medico.titulo ? medico.titulo + "." : "", medico.nome].filter(Boolean).join(" ")}${medico.crm ? ` — CRM-MG ${medico.crm.replace(/^\s*CRM[-\s]*(MG)?[\s-]*/i, "")}` : ""}` : null,
+    ].filter(Boolean) as string[];
+    const corpo = linhasPrescricao.map(l => `${l.label}: ${l.valor}`);
+    return [...cabecalho, "", ...corpo].join("\n");
+  }, [modalidade, dadosPaciente, acessoCompleto, linhasPrescricao, medico]);
 
   async function handleSalvar() {
     if (!modalidade) return;
     setSalvando(true);
-    await salvarPrescricao({
+    const r = await salvarPrescricao({
       acompanhamentoId: acompanhamento.id,
       modalidade,
       dados: { paciente: dadosPaciente, prescricao },
@@ -687,9 +604,18 @@ export function AbaTerapiaDialitica({ acompanhamento, paciente, internacao, medi
       textoPrescricao: texto,
     });
     setSalvando(false);
-    setCarregouHistorico(false);
-    await carregarHistorico();
-    setCarregouHistorico(true);
+    if (!r.sucesso) { window.alert("Não foi possível salvar a prescrição."); return; }
+    setVersaoLista(v => v + 1);
+  }
+
+  function imprimirSalva(p: PrescricaoSalva) {
+    abrirJanelaImpressao(montarDadosImpressao(
+      p.modalidade,
+      p.dados?.paciente ?? {},
+      p.dados?.prescricao ?? {},
+      medico,
+      new Date(p.created_at),
+    ));
   }
 
   async function handleExcluir(id: string) {
@@ -703,188 +629,6 @@ export function AbaTerapiaDialitica({ acompanhamento, paciente, internacao, medi
     if (p.dados?.prescricao) setPrescricaoState(p.dados.prescricao);
     setModalidade(p.modalidade as Modalidade);
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  async function copiarTexto() {
-    try {
-      await navigator.clipboard.writeText(texto);
-      setCopiado(true);
-      setTimeout(() => setCopiado(false), 2500);
-    } catch { /* ignora */ }
-  }
-
-  async function exportarPDF() {
-    const src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
-    await new Promise<void>((res, rej) => {
-      if ((window as unknown as Record<string, unknown>).jspdf) { res(); return; }
-      const s = document.createElement("script");
-      s.src = src; s.onload = () => res(); s.onerror = () => rej(new Error("jsPDF falhou"));
-      document.head.appendChild(s);
-    });
-    const win = window as unknown as Record<string, unknown>;
-    const jspdfMod = win.jspdf as Record<string, unknown>;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const JsPDF = (jspdfMod?.jsPDF || win.jsPDF) as new (...args: any[]) => any;
-    if (!JsPDF) return;
-
-    const doc = new JsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
-    const W = 297, H = 210, margin = 8;
-    const contentW = W - margin * 2;
-    let y = margin;
-
-    const dataHoje = new Date().toLocaleDateString("pt-BR");
-    const nomeMedico = medico
-      ? `${medico.titulo ? medico.titulo + ". " : ""}${medico.nome}${medico.crm ? " — " + medico.crm : ""}`
-      : null;
-
-    // ── Cabeçalho azul ───────────────────────────────────────
-    doc.setFillColor(30, 58, 95);
-    doc.rect(margin, y, contentW, 14, "F");
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(14); doc.setFont("helvetica", "bold");
-    doc.text("HOSPITAL DE CLÍNICAS — UFTM", W / 2, y + 6, { align: "center" });
-    doc.setFontSize(9); doc.setFont("helvetica", "normal");
-    doc.text("SERVIÇO DE NEFROLOGIA  ·  FOLHA DE PRESCRIÇÃO DE TERAPIA RENAL SUBSTITUTIVA", W / 2, y + 11.5, { align: "center" });
-    y += 17;
-
-    // ── Box dados do paciente — sem repetir no corpo ──────────
-    doc.setDrawColor(180, 200, 220);
-    doc.setFillColor(245, 248, 252);
-    doc.rect(margin, y, contentW, 20, "FD");
-    doc.setTextColor(20, 20, 60);
-    doc.setFontSize(9); doc.setFont("helvetica", "bold");
-    doc.text(`Paciente: ${dadosPaciente.nome || "—"}`, margin + 3, y + 6);
-    doc.text(`RG: ${dadosPaciente.rgHospitalar || "—"}`, margin + 120, y + 6);
-    doc.text(`Leito: ${dadosPaciente.leito || "—"}`, margin + 185, y + 6);
-    doc.text(`Data: ${dataHoje}`, margin + 240, y + 6);
-    doc.setFont("helvetica", "normal");
-    if (dadosPaciente.diagnostico) doc.text(`Diagnóstico: ${dadosPaciente.diagnostico}`, margin + 3, y + 13);
-    if (dadosPaciente.idade) doc.text(`Idade: ${dadosPaciente.idade} anos`, margin + 120, y + 13);
-    if (dadosPaciente.acesso) doc.text(`Acesso: ${dadosPaciente.acesso}`, margin + 185, y + 13);
-    y += 23;
-
-    // ── Área disponível entre cabeçalho e rodapé ─────────────
-    // Rodapé: assinatura médico (y=H-22) + linha rodapé (y=H-12)
-    const footerY = H - 10;
-    const assinaturaY = H - 20;
-    const maxY = assinaturaY - 3;
-
-    // ── Layout 2 colunas ─────────────────────────────────────
-    const colPrescW = Math.round(contentW * 0.52);
-    const colEnfW = contentW - colPrescW - 4;
-    const colEnfX = margin + colPrescW + 4;
-
-    // Cabeçalho coluna prescrição
-    doc.setFillColor(30, 58, 95);
-    doc.rect(margin, y, colPrescW, 8, "F");
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(9); doc.setFont("helvetica", "bold");
-    doc.text("PRESCRIÇÃO MÉDICA", margin + colPrescW / 2, y + 5.5, { align: "center" });
-
-    // Cabeçalho coluna enfermagem
-    doc.setFillColor(45, 90, 130);
-    doc.rect(colEnfX, y, colEnfW, 8, "F");
-    doc.text("REGISTRO DE ENFERMAGEM", colEnfX + colEnfW / 2, y + 5.5, { align: "center" });
-    y += 9;
-
-    // ── Coluna esquerda: só os parâmetros da prescrição ──────
-    // (nome, RG, leito já estão no cabeçalho — pular essas linhas)
-    const skipPrefixes = ["Paciente:", "RG:", "Leito:", "Data:"];
-    const linhas = texto.split("\n")
-      .filter(l => l.trim())
-      .filter(l => !skipPrefixes.some(p => l.startsWith(p)));
-
-    doc.setTextColor(20, 20, 20);
-    let yPresc = y;
-    linhas.forEach((linha, i) => {
-      if (yPresc > maxY - 6) return;
-      const isTitle = i === 0;
-      if (isTitle) {
-        doc.setFont("helvetica", "bold");
-        doc.setFillColor(210, 225, 242);
-        doc.rect(margin, yPresc - 1, colPrescW, 7.5, "F");
-      } else {
-        doc.setFont("helvetica", "normal");
-        if (i % 2 === 0) {
-          doc.setFillColor(248, 251, 255);
-          doc.rect(margin, yPresc - 1, colPrescW, 6.5, "F");
-        }
-      }
-      doc.setDrawColor(200, 215, 230);
-      doc.line(margin, yPresc + 5.5, margin + colPrescW, yPresc + 5.5);
-      doc.setFontSize(9.5);
-      doc.text(linha, margin + 3, yPresc + 3.5);
-      yPresc += isTitle ? 8 : 7;
-    });
-    doc.setDrawColor(150, 180, 210);
-    doc.rect(margin, y - 1, colPrescW, maxY - y + 1, "S");
-
-    // ── Coluna direita: Medicações → Intercorrências ──────────
-    doc.setDrawColor(150, 180, 210);
-    doc.rect(colEnfX, y - 1, colEnfW, maxY - y + 1, "S");
-
-    const alturaDisp = maxY - y;
-    const secEnf = [
-      { label: "MEDICAÇÕES ADMINISTRADAS", h: Math.round(alturaDisp * 0.40) },
-      { label: "INTERCORRÊNCIAS / OBSERVAÇÕES", h: Math.round(alturaDisp * 0.60) },
-    ];
-
-    let yEnf = y;
-    secEnf.forEach(sec => {
-      // Sub-cabeçalho
-      doc.setFillColor(220, 232, 245);
-      doc.rect(colEnfX, yEnf, colEnfW, 6, "F");
-      doc.setFont("helvetica", "bold"); doc.setFontSize(8.5); doc.setTextColor(30, 58, 95);
-      doc.text(sec.label, colEnfX + 3, yEnf + 4.2);
-
-      // Linhas de anotação
-      doc.setDrawColor(210, 220, 235);
-      const nLinhas = Math.floor((sec.h - 8) / 6.5);
-      for (let i = 0; i < nLinhas; i++) {
-        const ly = yEnf + 8 + i * 6.5;
-        if (ly < yEnf + sec.h - 1) doc.line(colEnfX + 3, ly, colEnfX + colEnfW - 3, ly);
-      }
-
-      yEnf += sec.h;
-      // Divisor entre seções
-      doc.setDrawColor(150, 180, 210);
-      doc.line(colEnfX, yEnf, colEnfX + colEnfW, yEnf);
-    });
-
-    // ── Assinatura médico — centro, acima do rodapé ──────────
-    doc.setDrawColor(80, 100, 130);
-    const assX = W / 2;
-    doc.line(assX - 45, assinaturaY, assX + 45, assinaturaY);
-    doc.setFontSize(9); doc.setFont("helvetica", "normal"); doc.setTextColor(40, 40, 40);
-    doc.text(nomeMedico ?? "Médico responsável / CRM", assX, assinaturaY + 5, { align: "center" });
-
-    // ── Rodapé ────────────────────────────────────────────────
-    doc.setDrawColor(30, 58, 95);
-    doc.line(margin, footerY, W - margin, footerY);
-    doc.setFontSize(7); doc.setFont("helvetica", "italic"); doc.setTextColor(100, 100, 100);
-    doc.text(
-      `Gerado pelo NEFRO-UFTM em ${new Date().toLocaleString("pt-BR")}  ·  Nefrologia HC-UFTM — Uberaba, MG`,
-      W / 2, footerY + 5, { align: "center" }
-    );
-
-    const blob = doc.output("blob");
-const url = URL.createObjectURL(blob);
-
-const iframe = document.createElement("iframe");
-iframe.style.display = "none";
-iframe.src = url;
-
-document.body.appendChild(iframe);
-
-iframe.onload = () => {
-    iframe.contentWindow?.focus();
-    iframe.contentWindow?.print();
-
-    setTimeout(() => {
-        URL.revokeObjectURL(url);
-        document.body.removeChild(iframe);
-    }, 2000);
-};
   }
 
   return (
@@ -941,16 +685,23 @@ iframe.onload = () => {
                   <input value="Cateter Tenckhoff" readOnly className="nc-input"
                     style={{ background: "var(--card2)", color: "var(--text3)", cursor: "not-allowed" }} />
                 ) : (
-                  <select value={dadosPaciente.acesso} onChange={e => setPaciente("acesso", e.target.value)}
-                    className="nc-input cursor-pointer">
-                    <option value="">—</option>
-                    <option>CDL jugular</option>
-                    <option>CDL femoral</option>
-                    <option>CDL subclávia</option>
-                    <option>FAV</option>
-                    <option>Permcath</option>
-                    <option>Prótese</option>
-                  </select>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <select value={dadosPaciente.acesso} onChange={e => setPaciente("acesso", e.target.value)}
+                      className="nc-input cursor-pointer" style={{ flex: 1, minWidth: 0 }}>
+                      <option value="">—</option>
+                      <option>CDL jugular</option>
+                      <option>CDL femoral</option>
+                      <option>CDL subclávia</option>
+                      <option>FAV</option>
+                      <option>Permcath</option>
+                    </select>
+                    <select value={dadosPaciente.acessoLado ?? ""} onChange={e => setPaciente("acessoLado", e.target.value)}
+                      className="nc-input cursor-pointer" style={{ width: 110 }} aria-label="Lado do acesso">
+                      <option value="">Lado</option>
+                      <option value="Direito">Direito</option>
+                      <option value="Esquerdo">Esquerdo</option>
+                    </select>
+                  </div>
                 )}
               </div>
               <Field label="Leito">
@@ -973,88 +724,64 @@ iframe.onload = () => {
             {modalidade === "TPE" && <FormTPE p={prescricao} set={setParam} peso={isNaN(peso) ? null : peso} />}
           </div>
 
-          {/* Prescrição gerada */}
-          {texto && (
-            <div className="nc-card overflow-hidden">
-              <div style={{ background: "#1e3a5f", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: "white" }}>📋 Prescrição gerada</span>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={copiarTexto}
-                    className="cursor-pointer rounded-full px-3 py-1 text-xs font-bold transition hover:opacity-80"
-                    style={{ background: "rgba(255,255,255,0.15)", color: "white", border: "1px solid rgba(255,255,255,0.2)" }}>
-                    {copiado ? "✓ Copiado!" : "⧉ Copiar"}
-                  </button>
-                  <button onClick={exportarPDF}
-                    className="cursor-pointer rounded-full px-3 py-1 text-xs font-bold transition hover:opacity-80"
-                    style={{ background: "rgba(255,255,255,0.15)", color: "white", border: "1px solid rgba(255,255,255,0.2)" }}>
-                    📄 PDF
-                  </button>
-                  <button onClick={handleSalvar} disabled={salvando || (pesoBrigatorio && !pesoValido)}
-                    className="cursor-pointer rounded-full px-3 py-1 text-xs font-bold transition hover:opacity-80 disabled:opacity-40"
-                    style={{ background: "var(--green)", color: "white" }}>
-                    {salvando ? "Salvando..." : "💾 Salvar"}
-                  </button>
-                </div>
-              </div>
-              <pre style={{
-                padding: "16px", fontSize: 13, lineHeight: 1.8, color: "var(--text)",
-                background: "var(--card)", whiteSpace: "pre-wrap", fontFamily: "var(--mono)",
-                margin: 0,
-              }}>
-                {texto}
-              </pre>
-            </div>
-          )}
+          {/* Salvar: a prescrição passa a aparecer na lista de prescrições salvas */}
+          <div className="flex justify-end">
+            <button onClick={handleSalvar} disabled={salvando || (pesoBrigatorio && !pesoValido)}
+              className="nc-btn nc-btn-primary disabled:opacity-40">
+              {salvando ? "Salvando..." : "💾 Salvar prescrição"}
+            </button>
+          </div>
         </>
       )}
 
-      {/* Histórico */}
+      {/* Prescrições salvas: lista única (ver, imprimir, carregar nos campos, excluir) */}
       <div className="nc-card overflow-hidden">
-        <button onClick={async () => { if (!verHistorico) await carregarHistorico(); setVerHistorico(v => !v); }}
-          className="flex w-full cursor-pointer items-center justify-between px-4 py-3 transition hover:opacity-80"
-          style={{ background: "var(--card2)", border: "none" }}>
-          <span className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--text3)" }}>
-            Prescrições salvas neste acompanhamento
+        <div style={{ background: "#1e3a5f", padding: "10px 16px" }}>
+          <span className="text-xs font-bold uppercase tracking-widest" style={{ color: "white" }}>
+            Prescrições salvas ({prescricoesSalvas.length})
           </span>
-          <span style={{ color: "var(--text3)", fontSize: 12 }}>{verHistorico ? "▴" : "▾"}</span>
-        </button>
+        </div>
 
-        {verHistorico && (
-          prescricoesSalvas.length === 0 ? (
-            <p className="px-4 py-3 text-sm" style={{ color: "var(--text3)" }}>Nenhuma prescrição salva.</p>
-          ) : (
-            prescricoesSalvas.map(p => (
-              <div key={p.id}>
-                <div className="flex items-center justify-between px-4 py-2.5"
-                  style={{ borderBottom: "1px solid var(--border)" }}>
-                  <button onClick={() => setPrescricaoAberta(prescricaoAberta === p.id ? null : p.id)}
-                    className="flex items-center gap-2 cursor-pointer text-left" style={{ background: "none", border: "none" }}>
+        {prescricoesSalvas.length === 0 ? (
+          <p className="px-4 py-3 text-sm" style={{ color: "var(--text3)" }}>Nenhuma prescrição salva.</p>
+        ) : (
+          prescricoesSalvas.map(p => {
+            const aberta = prescricaoAberta === p.id;
+            const botao = { padding: "3px 10px", fontSize: 12, fontWeight: 700, borderRadius: "var(--nc-radius)", cursor: "pointer" } as const;
+            return (
+              <div key={p.id} style={{ borderBottom: "1px solid var(--border)" }}>
+                <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5">
+                  <div className="flex items-center gap-2">
                     <span className="text-sm font-bold" style={{ color: "var(--accent)", fontFamily: "var(--mono)" }}>{p.modalidade}</span>
                     <span className="text-xs" style={{ color: "var(--text3)" }}>{fmtDt(p.created_at)}</span>
-                    <span style={{ color: "var(--text3)", fontSize: 10 }}>{prescricaoAberta === p.id ? "▴" : "▾"}</span>
-                  </button>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button
-                      onClick={() => carregarNosInputs(p as { modalidade: string; dados?: { paciente?: Record<string, string>; prescricao?: Record<string, string> } })}
-                      className="cursor-pointer text-xs font-bold transition hover:opacity-80"
-                      style={{ color: "var(--accent)", background: "var(--accent-dim)", border: "1px solid var(--accent)", borderRadius: "var(--nc-radius)", padding: "3px 10px" }}>
-                      ↑ Carregar nos campos
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button onClick={() => setPrescricaoAberta(aberta ? null : p.id)}
+                      style={{ ...botao, color: "var(--accent)", background: "var(--card)", border: "1px solid var(--border)" }}>
+                      {aberta ? "▴ Ocultar" : "👁 Ver"}
+                    </button>
+                    <button onClick={() => imprimirSalva(p)}
+                      style={{ ...botao, color: "white", background: "#1e3a5f", border: "none" }}>
+                      🖨 Imprimir
+                    </button>
+                    <button onClick={() => carregarNosInputs(p)}
+                      style={{ ...botao, color: "var(--accent)", background: "var(--accent-dim)", border: "1px solid var(--accent)" }}>
+                      Copiar prescrição
                     </button>
                     <button onClick={() => handleExcluir(p.id)}
-                      className="cursor-pointer text-xs transition hover:opacity-70"
-                      style={{ color: "var(--red)", background: "none", border: "none" }}>
+                      style={{ ...botao, color: "var(--red)", background: "none", border: "none" }}>
                       Excluir
                     </button>
                   </div>
                 </div>
-                {prescricaoAberta === p.id && p.texto_prescricao && (
-                  <pre style={{ padding: "12px 16px", fontSize: 12, lineHeight: 1.7, color: "var(--text2)", background: "var(--bg2)", whiteSpace: "pre-wrap", fontFamily: "var(--mono)", margin: 0 }}>
-                    {p.texto_prescricao}
+                {aberta && (
+                  <pre style={{ padding: "12px 16px", fontSize: 13, lineHeight: 1.8, color: "var(--text)", background: "var(--card)", whiteSpace: "pre-wrap", fontFamily: "var(--mono)", margin: 0 }}>
+                    {p.texto_prescricao ?? "Texto não disponível para esta prescrição."}
                   </pre>
                 )}
               </div>
-            ))
-          )
+            );
+          })
         )}
       </div>
     </div>

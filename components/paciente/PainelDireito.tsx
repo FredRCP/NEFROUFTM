@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { registrarDiurese, editarDiurese, excluirDiurese, buscarDiureses } from "@/lib/actions/pacientesExtra";
 import { createClient } from "@/lib/supabase/client";
+import { ModalDiurese } from "@/components/paciente/ModalDiurese";
 import type { Paciente, AcompanhamentoNefro } from "@/types/database";
 
 interface PontoDiurese { id: string; data: string; volume_ml: number; horas: number; }
@@ -116,6 +117,7 @@ export function PainelDireito({ acompanhamentoId, paciente, acompanhamento }: Pa
   const [volume, setVolume] = useState("");
   const [horas, setHoras] = useState("24");
   const [dataDiurese, setDataDiurese] = useState(() => new Date().toISOString().slice(0, 10));
+  const [modalDiurese, setModalDiurese] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [editandoId, setEditandoId] = useState<string | null>(null);
@@ -244,6 +246,18 @@ export function PainelDireito({ acompanhamentoId, paciente, acompanhamento }: Pa
 
         {/* Gráfico */}
         <GraficoDiurese dados={diureses} />
+
+        <button onClick={() => setModalDiurese(true)}
+          style={{ marginTop: 8, width: "100%", padding: "7px 10px", borderRadius: "var(--nc-radius)", background: "var(--accent)", color: "white", border: "none", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+          + Preencher diurese
+        </button>
+        {modalDiurese && (
+          <ModalDiurese
+            acompanhamentoId={acompanhamentoId}
+            onClose={() => setModalDiurese(false)}
+            onSalvo={carregarDiureses}
+          />
+        )}
 
         {/* Formulário — data editável */}
         <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>

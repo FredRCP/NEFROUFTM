@@ -72,7 +72,6 @@ export default async function DetalhePacientePage({
             transition: "background 0.15s", flexShrink: 0,
           }}
         >
-          <span style={{ fontSize: 16, lineHeight: 1 }}>←</span>
           Tela inicial
         </Link>
 

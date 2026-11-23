@@ -14,18 +14,7 @@ interface LinhaDashboard {
   pendencias: Pendencia[];
 }
 
-/** Cor única baseada no azul do app para todos os grupos — visual mais limpo e coeso. */
-const CORES_GRUPO: Record<string, { bg: string; border: string; text: string }> = {
-  UTIs:         { bg: "var(--accent-dim)", border: "var(--border2)", text: "var(--accent)" },
-  Enfermarias:  { bg: "var(--accent-dim)", border: "var(--border2)", text: "var(--accent)" },
-  Pronto_Socorro: { bg: "var(--accent-dim)", border: "var(--border2)", text: "var(--accent)" },
-  default:      { bg: "var(--accent-dim)", border: "var(--border2)", text: "var(--accent)" },
-};
-
 async function buscarDados(supabase: ReturnType<typeof createClient>): Promise<LinhaDashboard[]> {
-  // Busca acompanhamentos ativos + paciente + internação + pendências.
-  // Em volume baixo (~20-30 linhas ativas), uma query com joins aninhados
-  // do Supabase resolve bem sem precisar de view materializada.
   const { data, error } = await supabase
     .from("acompanhamentos_nefro")
     .select(
@@ -54,51 +43,16 @@ async function buscarDados(supabase: ReturnType<typeof createClient>): Promise<L
   );
 }
 
-/**
- * Ordena pacientes pelo número do leito (ordem numérica, não alfabética).
- * Extrai os dígitos do campo enfermaria_leito (ex: "105" -> 105, "12A" -> 12).
- * Leitos sem número (null/vazio) vão para o final.
- * Em caso de mesmo número (ex: "105A" e "105B"), desempata alfabeticamente
- * pelo texto completo do leito.
- */
-function ordenarPorLeito(linhas: LinhaDashboard[]): LinhaDashboard[] {
-  return [...linhas].sort((a, b) => {
-    const leitoA = a.internacao.enfermaria_leito || "";
-    const leitoB = b.internacao.enfermaria_leito || "";
-
-    const numA = leitoA.match(/\d+/)?.[0];
-    const numB = leitoB.match(/\d+/)?.[0];
-
-    if (numA === undefined && numB === undefined) return leitoA.localeCompare(leitoB);
-    if (numA === undefined) return 1;
-    if (numB === undefined) return -1;
-
-    const diff = parseInt(numA, 10) - parseInt(numB, 10);
-    if (diff !== 0) return diff;
-
-    return leitoA.localeCompare(leitoB);
-  });
-}
-
-type FiltroIndicador = "todos" | "avaliados" | "pendentes" | "hd_hoje";
+type FiltroStatus = "todos" | "pendentes" | "avaliados" | "hd_hoje";
 
 export function DashboardClient() {
   const supabase = createClient();
   const [linhas, setLinhas] = useState<LinhaDashboard[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [busca, setBusca] = useState("");
-  const [filtroIndicador, setFiltroIndicador] = useState<FiltroIndicador>("todos");
+  const [filtro, setFiltro] = useState<FiltroStatus>("todos");
   const [modalAberto, setModalAberto] = useState(false);
-  const [setoresRecolhidos, setSetoresRecolhidos] = useState<Set<string>>(new Set());
-
-  function toggleSetor(valor: string) {
-    setSetoresRecolhidos((prev) => {
-      const next = new Set(prev);
-      if (next.has(valor)) next.delete(valor);
-      else next.add(valor);
-      return next;
-    });
-  }
+  const [fechados, setFechados] = useState<Record<string, boolean>>({});
 
   const recarregar = useCallback(() => {
     buscarDados(supabase).then(setLinhas);
@@ -115,8 +69,6 @@ export function DashboardClient() {
     });
 
     // Realtime: qualquer mudança nas tabelas relevantes recarrega a lista.
-    // Estratégia simples (refetch completo) é adequada ao volume baixo
-    // (~20-30 pacientes ativos) — evita complexidade de merge incremental.
     const channel = supabase
       .channel("dashboard-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "acompanhamentos_nefro" }, recarregar)
@@ -130,7 +82,7 @@ export function DashboardClient() {
     };
   }, [recarregar, supabase]);
 
-  // Filtro de busca global — nome, RG, diagnóstico, etiologia, tags, comorbidades
+  // Busca textual: nome, RG, diagnóstico, etiologia, tags, comorbidades
   const linhasPorBusca = busca.trim()
     ? linhas.filter((l) => {
         const termo = busca.toLowerCase();
@@ -145,9 +97,9 @@ export function DashboardClient() {
       })
     : linhas;
 
-  // Filtro pelos indicadores clicáveis — combinado com a busca textual acima
+  // Filtro de status (substitui os 4 cards de indicadores)
   const linhasFiltradas = linhasPorBusca.filter((l) => {
-    switch (filtroIndicador) {
+    switch (filtro) {
       case "avaliados":
         return l.acompanhamento.avaliado_hoje;
       case "pendentes":
@@ -159,18 +111,12 @@ export function DashboardClient() {
     }
   });
 
-  function handleClickIndicador(filtro: FiltroIndicador) {
-    setFiltroIndicador((atual) => (atual === filtro ? "todos" : filtro));
-  }
-
-  // Indicadores agregados (Seção 5.1) — calculados sobre o resultado da busca textual,
-  // não sobre o filtro de indicador (senão os números mudariam ao clicar neles).
+  // Contagens sobre a busca textual (não sobre o filtro de status)
   const totalAtivos = linhasPorBusca.length;
   const avaliadosHoje = linhasPorBusca.filter((l) => l.acompanhamento.avaliado_hoje).length;
   const pendentes = totalAtivos - avaliadosHoje;
   const hdHoje = linhasPorBusca.filter((l) => l.acompanhamento.situacao_dialitica === "hd_hoje").length;
 
-  // Agrupamento pelos 3 grandes grupos fixos (UTIs / Enfermarias / Pronto-Socorro)
   const linhasPorGrupo = new Map<string, LinhaDashboard[]>();
   for (const linha of linhasFiltradas) {
     const grupo = getGrupoBySetor(linha.internacao.setor);
@@ -190,55 +136,26 @@ export function DashboardClient() {
     );
   }
 
+  const opcoesFiltro: { id: FiltroStatus; label: string; n: number; cor: string }[] = [
+    { id: "todos", label: "Todos", n: totalAtivos, cor: "var(--text)" },
+    { id: "pendentes", label: "Sem avaliação", n: pendentes, cor: "var(--red)" },
+    { id: "avaliados", label: "Avaliados", n: avaliadosHoje, cor: "var(--green)" },
+    { id: "hd_hoje", label: "HD hoje", n: hdHoje, cor: "var(--red)" },
+  ];
+
   return (
-    <div className="p-3 sm:p-6" style={{ background: "var(--bg)" }}>
-      {/* Alerta de pendentes (item 4 da revisão) — visual, ao abrir o app */}
+    <div className="p-6" style={{ background: "var(--bg)" }}>
       {pendentes > 0 && (
-        <div
-          className="mb-4 rounded-(--nc-radius) px-4 py-2.5 text-sm"
-          style={{ background: "var(--red-dim)", color: "var(--red)", border: "1px solid rgba(176,48,32,0.2)" }}
-        >
+        <div className="mb-4 rounded-(--nc-radius) px-4 py-2.5 text-sm"
+          style={{ background: "var(--red-dim)", color: "var(--red)", border: "1px solid rgba(176,48,32,0.2)" }}>
           ⚠ Existem <strong>{pendentes}</strong> paciente(s) sem avaliação registrada hoje.
         </div>
       )}
 
-      {/* Indicadores agregados — clicáveis, funcionam como filtro */}
-      <div className="mb-4 grid grid-cols-2 gap-2 sm:mb-6 sm:grid-cols-4 sm:gap-3">
-        <Indicador
-          label="Pacientes ativos"
-          valor={totalAtivos}
-          ativo={filtroIndicador === "todos"}
-          onClick={() => handleClickIndicador("todos")}
-        />
-        <Indicador
-          label="Avaliados hoje"
-          valor={avaliadosHoje}
-          tom="green"
-          ativo={filtroIndicador === "avaliados"}
-          onClick={() => handleClickIndicador("avaliados")}
-        />
-        <Indicador
-          label="Pendentes"
-          valor={pendentes}
-          tom="red"
-          ativo={filtroIndicador === "pendentes"}
-          onClick={() => handleClickIndicador("pendentes")}
-        />
-        <Indicador
-          label="HD hoje"
-          valor={hdHoje}
-          tom="red"
-          ativo={filtroIndicador === "hd_hoje"}
-          onClick={() => handleClickIndicador("hd_hoje")}
-        />
-      </div>
-
-      {/* Busca global + novo paciente */}
-      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:gap-3">
+      {/* Busca + novo paciente */}
+      <div className="mb-3 flex gap-3">
         <div className="relative flex-1">
-          <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-base" style={{ color: "var(--text3)" }}>
-            ⌕
-          </span>
+          <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-base" style={{ color: "var(--text3)" }}>⌕</span>
           <input
             type="text"
             value={busca}
@@ -253,55 +170,60 @@ export function DashboardClient() {
         </button>
       </div>
 
-      {/* Cards pelos 3 grandes grupos — sempre fixos, mesmo vazios */}
-      {linhasFiltradas.length === 0 && (busca.trim() || filtroIndicador !== "todos") ? (
-        <div
-          className="rounded-(--nc-radius-lg) border border-dashed p-12 text-center"
-          style={{ borderColor: "var(--border)", background: "var(--card)", color: "var(--text3)" }}
-        >
-          Nenhum paciente encontrado para esse filtro.
+      {/* Filtro de status */}
+      <div className="mb-5 flex flex-wrap gap-2">
+        {opcoesFiltro.map((op) => {
+          const ativo = filtro === op.id;
+          return (
+            <button
+              key={op.id}
+              onClick={() => setFiltro(op.id)}
+              className="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition"
+              style={{
+                background: ativo ? op.cor : "var(--card)",
+                color: ativo ? "white" : op.cor,
+                border: `1px solid ${ativo ? op.cor : "var(--border)"}`,
+              }}
+            >
+              {op.label}
+              <span className="rounded-full px-1.5 text-[11px] font-extrabold"
+                style={{ background: ativo ? "rgba(255,255,255,0.25)" : "var(--card2)", color: ativo ? "white" : op.cor, fontFamily: "var(--mono)" }}>
+                {op.n}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {linhasFiltradas.length === 0 && (busca.trim() || filtro !== "todos") ? (
+        <div className="rounded-(--nc-radius-lg) border border-dashed p-12 text-center"
+          style={{ borderColor: "var(--border)", background: "var(--card)", color: "var(--text3)" }}>
+          Nenhum paciente encontrado.
         </div>
       ) : (
-        <div className="space-y-8">
+        <div className="space-y-6">
           {GRANDES_GRUPOS.map((grupo) => {
-            const linhasDoGrupo = ordenarPorLeito(linhasPorGrupo.get(grupo.value) || []);
-            const recolhido = setoresRecolhidos.has(grupo.value);
+            const linhasDoGrupo = linhasPorGrupo.get(grupo.value) || [];
+            const recolhido = !!fechados[grupo.value];
             return (
-              <div key={grupo.value}>
-                {/* Header clicável — accordion */}
+              <section key={grupo.value}>
                 <button
-                  onClick={() => toggleSetor(grupo.value)}
-                  className="mb-3 flex w-full cursor-pointer items-center gap-2.5 rounded-md px-3 py-2 transition hover:opacity-90 active:scale-[0.99]"
-                  style={{ background: "#1e3a5f", border: "none" }}
+                  onClick={() => setFechados((f) => ({ ...f, [grupo.value]: !f[grupo.value] }))}
+                  className="mb-3 flex w-full items-center gap-2.5 rounded-md px-3.5 py-2 text-left transition hover:opacity-90"
+                  style={{ background: "#1e3a5f", color: "white", border: "none", cursor: "pointer" }}
                 >
-                  <span style={{ color: "white", fontSize: 12, opacity: 0.7, display: "inline-block", transform: recolhido ? "rotate(-90deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
-                    ▾
-                  </span>
-                  <span className="text-sm font-extrabold uppercase tracking-widest" style={{ color: "white", letterSpacing: "0.08em" }}>
-                    {grupo.label}
-                  </span>
-                  <span className="rounded-full px-2 py-0.5 text-[11px] font-bold"
-                    style={{ background: "rgba(255,255,255,0.18)", color: "white" }}>
+                  <span className="text-[10px]">{recolhido ? "▸" : "▾"}</span>
+                  <span className="text-xs font-extrabold uppercase" style={{ letterSpacing: "0.08em" }}>{grupo.label}</span>
+                  <span className="rounded-full px-2 py-0.5 text-[11px] font-bold" style={{ background: "rgba(255,255,255,0.18)" }}>
                     {linhasDoGrupo.length}
                   </span>
-                  {recolhido && (
-                    <span className="ml-auto text-[11px]" style={{ color: "rgba(255,255,255,0.45)" }}>
-                      toque para expandir
-                    </span>
-                  )}
                 </button>
 
-                {/* Conteúdo colapsável */}
                 {!recolhido && (
                   linhasDoGrupo.length === 0 ? (
-                    <div
-                      className="rounded-(--nc-radius) border border-dashed p-6 text-center text-sm"
-                      style={{ borderColor: "var(--border)", background: "var(--card)", color: "var(--text3)" }}
-                    >
-                      Nenhum paciente neste grupo.
-                    </div>
+                    <p className="px-1 text-xs" style={{ color: "var(--text3)" }}>Nenhum paciente neste grupo.</p>
                   ) : (
-                    <div className="grid grid-cols-2 items-stretch sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7" style={{ gap: "12px" }}>
+                    <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(170px, 260px))" }}>
                       {linhasDoGrupo.map((linha) => (
                         <PacienteCard
                           key={linha.acompanhamento.id}
@@ -314,7 +236,7 @@ export function DashboardClient() {
                     </div>
                   )
                 )}
-              </div>
+              </section>
             );
           })}
         </div>
@@ -323,51 +245,9 @@ export function DashboardClient() {
       {modalAberto && (
         <NovoPacienteModal
           onClose={() => setModalAberto(false)}
-          onSaved={() => {
-            setModalAberto(false);
-            recarregar();
-          }}
+          onSaved={() => { setModalAberto(false); recarregar(); }}
         />
       )}
     </div>
-  );
-}
-
-function Indicador({
-  label,
-  valor,
-  tom = "default",
-  ativo = false,
-  onClick,
-}: {
-  label: string;
-  valor: number;
-  tom?: "default" | "green" | "red" | "amber" | "purple";
-  ativo?: boolean;
-  onClick?: () => void;
-}) {
-  const cores: Record<string, string> = {
-    default: "var(--text)",
-    green: "var(--green)",
-    red: "var(--red)",
-    amber: "var(--amber)",
-    purple: "#6b3fa0",
-  };
-
-  return (
-    <button
-      onClick={onClick}
-      className="nc-card cursor-pointer p-3 text-left transition"
-      style={{
-        borderWidth: ativo ? 2 : 1,
-        borderColor: ativo ? cores[tom] : "var(--border)",
-        background: ativo ? "var(--card2)" : "var(--card)",
-      }}
-    >
-      <p className="text-2xl font-extrabold" style={{ color: cores[tom], fontFamily: "var(--mono)" }}>
-        {valor}
-      </p>
-      <p className="text-xs" style={{ color: "var(--text3)" }}>{label}</p>
-    </button>
   );
 }

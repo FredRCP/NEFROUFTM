@@ -40,7 +40,7 @@ export const SETORES: { value: Setor; label: string; grupo: GrandeGrupo }[] = [
   { value: "RPA",                label: "RPA",                 grupo: "Enfermarias"   },
   { value: "UDIP",               label: "UDIP",                grupo: "Enfermarias"   },
   { value: "UTI_2",              label: "UTI 2 / Neuro",       grupo: "UTIs"          },
-  { value: "UTI_Coronariana",    label: "UTI Coronariana",     grupo: "UTIs"          },
+  { value: "UTI_Coronariana",    label: "UTI-COR",     grupo: "UTIs"          },
   { value: "UTI_Geral",          label: "UTI Geral",           grupo: "UTIs"          },
   { value: "UTI_Neo",            label: "UTI Neo",             grupo: "UTIs"          },
   { value: "UTR",                label: "UTR",                 grupo: "Enfermarias"   },

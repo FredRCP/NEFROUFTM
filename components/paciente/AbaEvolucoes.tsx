@@ -22,6 +22,9 @@ function fmtDtHora(iso: string) {
     day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit",
   });
 }
+function hojeLocal() {
+  return new Date().toLocaleDateString("sv-SE"); // AAAA-MM-DD no fuso local
+}
 function isHoje(iso: string) {
   return iso.slice(0, 10) === new Date().toISOString().slice(0, 10);
 }
@@ -42,9 +45,17 @@ export function AbaEvolucoes({ acompanhamentoId, acompanhamento, evolucoes, usua
 
   const ehAutor = evolucaoSelecionada?.autor_id === usuarioId;
 
+  // Nova evolução: abre o editor em branco (diurese não é obrigatória)
   function handleNovaEvolucao() {
-    setNovaEvolucao(true); setEvolucaoSelecionada(null); setModoEdicao(false); setTextoNova("");
+    setNovaEvolucao(true); setEvolucaoSelecionada(null); setModoEdicao(false);
+    setTextoNova("");
   }
+
+  function copiarAnterior() {
+    if (evolucoes.length === 0) return;
+    setTextoNova(evolucoes[0].texto);
+  }
+
   function handleSalvarNova() {
     if (!textoNova.trim()) return;
     startTransition(async () => {
@@ -102,7 +113,7 @@ export function AbaEvolucoes({ acompanhamentoId, acompanhamento, evolucoes, usua
     <>
     {/* ── DESKTOP: 3 colunas ── */}
     <div className="hidden sm:grid" style={{
-      gridTemplateColumns: "260px 1fr 260px",
+      gridTemplateColumns: "280px 1fr 280px",
       height: "100%",
       overflow: "hidden",
     }}>
@@ -173,7 +184,7 @@ export function AbaEvolucoes({ acompanhamentoId, acompanhamento, evolucoes, usua
             <div style={{ padding: "10px 20px", borderBottom: "1px solid var(--border)", background: "var(--card2)", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <span style={{ fontSize: 13, fontWeight: 700, color: "var(--green)" }}>✏ Nova evolução</span>
               <button
-                onClick={() => { if (evolucoes.length > 0) setTextoNova(evolucoes[0].texto); }}
+                onClick={copiarAnterior}
                 disabled={evolucoes.length === 0}
                 style={{ fontSize: 11, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font)" }}>
                 Copiar anterior
@@ -344,7 +355,7 @@ export function AbaEvolucoes({ acompanhamentoId, acompanhamento, evolucoes, usua
               <>
                 <div style={{ padding: "10px 16px", borderBottom: "1px solid var(--border)", background: "var(--card2)", flexShrink: 0, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span style={{ fontSize: 13, fontWeight: 700, color: "var(--green)" }}>✏ Nova evolução</span>
-                  <button onClick={() => { if (evolucoes.length > 0) setTextoNova(evolucoes[0].texto); }}
+                  <button onClick={copiarAnterior}
                     disabled={evolucoes.length === 0}
                     style={{ fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer" }}>
                     Copiar anterior

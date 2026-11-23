@@ -138,7 +138,7 @@ const PERFIS: Record<string, { label: string; icon: string; numericos: string[];
     textos: ["eas","urocultura","imagem"],
   },
   ira: {
-    label: "IRA", icon: "🚨",
+    label: "IRA / UTI", icon: "🚨",
     numericos: ["creatinina","ureia","sodio","potassio","calcio","calcio_ionico","fosforo","ph","bic","lactato","albumina","tap","ttpa","hemoglobina","hematocrito","plaquetas","cpk","acido_urico"],
     textos: ["eas","urocultura","imagem"],
   },
@@ -513,9 +513,28 @@ export function AbaExames({ acompanhamentoId, paciente, acompanhamento }: AbaExa
                         {fmtDt(r.data)}
                       </th>
                     ))}
-                    <th style={{ padding: "7px 8px", background: "#1e3a5f" }}>
-                      {/* ações */}
-                    </th>
+                    <th style={{ padding: "7px 8px", background: "#1e3a5f" }} />
+                  </tr>
+                  {/* Linha de ações — no topo, junto às datas, para ser encontrada sem rolar */}
+                  <tr style={{ background: "var(--card2)", borderBottom: "2px solid var(--border)" }}>
+                    <td style={{ padding: "5px 8px", fontSize: 10, color: "var(--text3)", fontWeight: 700, position: "sticky", left: 0, background: "var(--card2)", zIndex: 1 }}>
+                      Ações
+                    </td>
+                    {regsOrdenados.map(r => (
+                      <td key={r.id} style={{ padding: "4px 8px", textAlign: "center" }}>
+                        <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+                          <button onClick={() => abrirEditar(r)} title="Editar este exame"
+                            style={{ background: "var(--accent-dim)", border: "1px solid var(--border)", borderRadius: 6, color: "var(--accent)", cursor: "pointer", fontSize: 12, fontWeight: 700, padding: "2px 8px" }}>
+                            ✏ Editar
+                          </button>
+                          <button onClick={() => excluir(r.id)} title="Excluir este exame"
+                            style={{ background: "var(--red-dim)", border: "1px solid rgba(176,48,32,0.2)", borderRadius: 6, color: "var(--red)", cursor: "pointer", fontSize: 12, fontWeight: 700, padding: "2px 8px" }}>
+                            🗑
+                          </button>
+                        </div>
+                      </td>
+                    ))}
+                    <td />
                   </tr>
                 </thead>
                 <tbody>
@@ -546,23 +565,6 @@ export function AbaExames({ acompanhamentoId, paciente, acompanhamento }: AbaExa
                     </tr>
                   ))}
                 </tbody>
-                {/* Linha de ações */}
-                <tfoot>
-                  <tr style={{ borderTop: "2px solid var(--border)", background: "var(--card2)" }}>
-                    <td style={{ padding: "4px 8px", fontSize: 10, color: "var(--text3)", fontWeight: 600, position: "sticky", left: 0, background: "var(--card2)", zIndex: 1 }}>
-                      Ações
-                    </td>
-                    {regsOrdenados.map(r => (
-                      <td key={r.id} style={{ padding: "4px 8px", textAlign: "center" }}>
-                        <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
-                          <button onClick={() => abrirEditar(r)} title="Editar" style={{ background: "none", border: "none", color: "var(--text2)", cursor: "pointer", fontSize: 13 }}>✏</button>
-                          <button onClick={() => excluir(r.id)} title="Excluir" style={{ background: "none", border: "none", color: "var(--red)", cursor: "pointer", fontSize: 13 }}>🗑</button>
-                        </div>
-                      </td>
-                    ))}
-                    <td />
-                  </tr>
-                </tfoot>
               </table>
             </div>
           </div>
@@ -571,7 +573,7 @@ export function AbaExames({ acompanhamentoId, paciente, acompanhamento }: AbaExa
 
       {/* Modal novo/editar — via portal para escapar do overflow:hidden */}
       {showModal && typeof document !== "undefined" && createPortal(
-        <div className="fixed inset-0 z-index: 300 flex items-center justify-center p-2 sm:p-4"
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-2 sm:p-4"
           style={{ background: "rgba(0,0,0,0.55)" }}
           onClick={e => { if (e.target === e.currentTarget) setShowModal(false); }}>
           <div className="flex max-h-[95vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl"
@@ -712,7 +714,7 @@ export function AbaExames({ acompanhamentoId, paciente, acompanhamento }: AbaExa
                   </button>
                 </div>
                 <p style={{ fontSize: 10, color: "var(--text3)", marginTop: 4 }}>
-                  Pressione Enter ou clique em + Adicionar para incluir cada exame na lista.
+                  Pressione Enter ou clique em "+ Adicionar" para incluir cada exame na lista.
                 </p>
               </div>
             </div>
