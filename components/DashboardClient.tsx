@@ -43,6 +43,15 @@ async function buscarDados(supabase: ReturnType<typeof createClient>): Promise<L
   );
 }
 
+/** Ordena por setor e, dentro do setor, pelo número do leito (101 antes de 224). */
+function compararPorSetorELeito(a: LinhaDashboard, b: LinhaDashboard): number {
+  const setor = a.internacao.setor.localeCompare(b.internacao.setor, "pt-BR");
+  if (setor !== 0) return setor;
+  return (a.internacao.enfermaria_leito ?? "").localeCompare(
+    b.internacao.enfermaria_leito ?? "", "pt-BR", { numeric: true, sensitivity: "base" }
+  );
+}
+
 type FiltroStatus = "todos" | "pendentes" | "avaliados" | "hd_hoje";
 
 export function DashboardClient() {
@@ -118,7 +127,7 @@ export function DashboardClient() {
   const hdHoje = linhasPorBusca.filter((l) => l.acompanhamento.situacao_dialitica === "hd_hoje").length;
 
   const linhasPorGrupo = new Map<string, LinhaDashboard[]>();
-  for (const linha of linhasFiltradas) {
+  for (const linha of [...linhasFiltradas].sort(compararPorSetorELeito)) {
     const grupo = getGrupoBySetor(linha.internacao.setor);
     if (!linhasPorGrupo.has(grupo)) linhasPorGrupo.set(grupo, []);
     linhasPorGrupo.get(grupo)!.push(linha);

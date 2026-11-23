@@ -103,7 +103,7 @@ export function PacienteCard({ acompanhamento, paciente, internacao, pendencias 
           cursor: "pointer",
         }}
       >
-        {avaliado ? "✓ Avaliado · toque p/ desfazer" : "👆 Avaliar"}
+        {temPendencia ? "⚠ Pendência" : avaliado ? "✓ Avaliado · toque p/ desfazer" : "👆 Avaliar"}
       </button>
 
       <div className="flex min-h-0 flex-1 flex-col px-3 pb-2 pt-2.5">

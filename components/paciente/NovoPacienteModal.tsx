@@ -127,6 +127,7 @@ export function NovoPacienteModal({
   const [dataNascimento, setDataNascimento] = useState(paciente?.data_nascimento ?? "");
   const [sexo, setSexo] = useState<"M" | "F" | "">(paciente?.sexo ?? "");
   const [comorbidades, setComorbidades] = useState<string[]>(paciente?.comorbidades ?? []);
+  const [outraComorb, setOutraComorb] = useState("");
   const [etiologiaDrc, setEtiologiaDrc] = useState(paciente?.etiologia_drc ?? "");
   const [creatininaBasal, setCreatininaBasal] = useState(paciente?.creatinina_basal?.toString() ?? "");
   const [dataCreatininaBasal, setDataCreatininaBasal] = useState(paciente?.data_creatinina_basal ?? "");
@@ -187,6 +188,13 @@ export function NovoPacienteModal({
     setObservacoes(p.observacoes_gerais || "");
     setModoReativacao(true);
     setRgConfirmado(true);
+  }
+
+  function adicionarComorbidadeOutra() {
+    const t = outraComorb.trim();
+    if (!t) return;
+    if (!comorbidades.includes(t)) setComorbidades((prev) => [...prev, t]);
+    setOutraComorb("");
   }
 
   function toggleComorbidade(c: string) {
@@ -521,6 +529,31 @@ export function NovoPacienteModal({
                         </button>
                       );
                     })}
+                    {comorbidades.filter((c) => !COMORBIDADES_OPCOES.includes(c)).map((c) => (
+                      <span key={c} className="nc-chip active inline-flex items-center gap-1.5"
+                        style={{ padding: "6px 10px", fontSize: 13, minHeight: 36 }}>
+                        {c}
+                        <button type="button" aria-label={`Remover ${c}`}
+                          onClick={() => setComorbidades((prev) => prev.filter((x) => x !== c))}
+                          style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", fontWeight: 800 }}>
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="mt-2 flex gap-2">
+                    <input
+                      type="text"
+                      value={outraComorb}
+                      onChange={(e) => setOutraComorb(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); adicionarComorbidadeOutra(); } }}
+                      placeholder="Outro diagnóstico (ex.: amiloidose)"
+                      className={inputClass}
+                    />
+                    <button type="button" onClick={adicionarComorbidadeOutra} className="nc-chip cursor-pointer shrink-0"
+                      style={{ padding: "6px 12px", fontSize: 13, minHeight: 36 }}>
+                      + Adicionar
+                    </button>
                   </div>
                 </div>
 

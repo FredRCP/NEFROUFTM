@@ -8,6 +8,7 @@ import {
 } from "@/lib/actions/acompanhamentos";
 import { atualizarLeito } from "@/lib/actions/pacientesExtra";
 import { NovoPacienteModal } from "@/components/paciente/NovoPacienteModal";
+import { ExcluirCadastroButton } from "@/components/paciente/ExcluirCadastroButton";
 import { CATALOGO_LEITOS, SETORES } from "@/types/database";
 import type { AcompanhamentoNefro, Paciente, Internacao } from "@/types/database";
 
@@ -385,6 +386,21 @@ export function AbaResumo({ acompanhamento, paciente, internacao }: AbaResumoPro
               </div>
             </div>
           )}
+        </div>
+      </section>
+
+      {/* ── Excluir cadastro: remoção total ───────────────────────────── */}
+      <section>
+        <SecaoHeader label="Excluir cadastro" />
+        <div className="nc-card p-4">
+          <p className="mb-2 text-sm" style={{ color: "var(--text2)" }}>
+            Remove o paciente <strong>definitivamente</strong> do sistema, junto com evoluções, pendências e internação.
+            Não pode ser desfeito.
+          </p>
+          <p className="mb-3 text-xs" style={{ color: "var(--text3)" }}>
+            Se o paciente apenas saiu do acompanhamento, use <strong>Encerrar acompanhamento</strong> acima: o histórico é mantido.
+          </p>
+          <ExcluirCadastroButton acompanhamentoId={acompanhamento.id} nomePaciente={paciente.nome} />
         </div>
       </section>
 

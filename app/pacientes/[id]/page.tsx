@@ -1,9 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
-import Link from "next/link";
 import { AppHeader } from "@/components/AppHeader";
 import { FichaPaciente } from "@/components/paciente/FichaPaciente";
-import { ExcluirCadastroButton } from "@/components/paciente/ExcluirCadastroButton";
 import { LockBodyScroll } from "@/components/LockBodyScroll";
 
 export default async function DetalhePacientePage({
@@ -46,71 +44,27 @@ export default async function DetalhePacientePage({
     <div style={{ display: "flex", flexDirection: "column", height: "100dvh", overflow: "hidden" }}>
       <LockBodyScroll />
 
-      {/* AppHeader fixo */}
-      <AppHeader nomeMedico={medico?.nome ?? user.email ?? "Usuário"} titulo={medico?.titulo} />
-
-      {/* Barra de identificação do paciente — fixa */}
-      <div
-        style={{
-          flexShrink: 0,
-          background: "#1e3a5f",
-          padding: "0 16px",
-          height: 52,
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
-        }}
-      >
-        <Link
-          href="/dashboard"
-          style={{
-            display: "flex", alignItems: "center", gap: 6,
-            padding: "6px 14px 6px 10px", borderRadius: 999,
-            background: "rgba(255,255,255,0.12)", color: "white",
-            textDecoration: "none", fontSize: 13, fontWeight: 700,
-            border: "1px solid rgba(255,255,255,0.18)",
-            transition: "background 0.15s", flexShrink: 0,
-          }}
-        >
-          Tela inicial
-        </Link>
-
-        <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 18, flexShrink: 0 }}>/</span>
-
-        <span style={{
-          fontSize: 15, fontWeight: 800, color: "white",
-          whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-          flex: "1 1 auto", minWidth: 0,
-        }}>
-          {paciente?.nome ?? acompanhamento.paciente.nome}
-        </span>
-
-        <span style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", fontFamily: "var(--mono)", whiteSpace: "nowrap", flexShrink: 0 }}>
-          RG {paciente?.rg_hospitalar ?? acompanhamento.paciente.rg_hospitalar}
-        </span>
-
-        <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 16, flexShrink: 0 }}>·</span>
-
-        <span style={{ fontSize: 12, color: "rgba(255,255,255,0.85)", fontWeight: 600, whiteSpace: "nowrap", flexShrink: 0 }}>
-          🛏️ {leito}
-        </span>
-
-        {!acompanhamento.ativo && (
-          <>
-            <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 16, flexShrink: 0 }}>·</span>
-            <span style={{ fontSize: 11, fontWeight: 700, flexShrink: 0, background: "var(--red)", color: "white", padding: "2px 8px", borderRadius: 999 }}>
-              Encerrado
+      {/* Barra única: marca à esquerda, paciente no centro, perfil à direita */}
+      <AppHeader
+        nomeMedico={medico?.nome ?? user.email ?? "Usuário"}
+        titulo={medico?.titulo}
+        centro={
+          <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, whiteSpace: "nowrap" }}>
+            <span style={{ fontSize: 15, fontWeight: 800, color: "white", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>
+              {(paciente?.nome ?? acompanhamento.paciente.nome).toUpperCase()}
             </span>
-          </>
-        )}
-
-        <div style={{ marginLeft: "auto", flexShrink: 0 }}>
-          <ExcluirCadastroButton
-            acompanhamentoId={acompanhamento.id}
-            nomePaciente={acompanhamento.paciente.nome}
-          />
-        </div>
-      </div>
+            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", fontFamily: "var(--mono)" }}>
+              RG {paciente?.rg_hospitalar ?? acompanhamento.paciente.rg_hospitalar}
+            </span>
+            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.85)", fontWeight: 600 }}>🛏️ {leito}</span>
+            {!acompanhamento.ativo && (
+              <span style={{ fontSize: 11, fontWeight: 700, background: "var(--red)", color: "white", padding: "2px 8px", borderRadius: 999 }}>
+                Encerrado
+              </span>
+            )}
+          </div>
+        }
+      />
 
       {/* FichaPaciente ocupa o restante — gerencia abas e scroll internamente */}
       <div style={{ flex: 1, overflow: "hidden", background: "var(--card)" }}>

@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { AppHeader } from "@/components/AppHeader";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -204,18 +205,16 @@ export default function PacientesPage() {
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
-      {/* Header */}
-      <div style={{ background: "#1e3a5f", padding: "0 20px", height: 52, display: "flex", alignItems: "center", gap: 12 }}>
-        <button onClick={() => router.push("/dashboard")}
-          style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 14px 6px 10px", borderRadius: 999, background: "rgba(255,255,255,0.12)", color: "white", border: "1px solid rgba(255,255,255,0.18)", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "var(--font)" }}>
-          <span style={{ fontSize: 16 }}>←</span> Tela Inicial
-        </button>
-        <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 18 }}></span>
-        <span style={{ fontSize: 15, fontWeight: 800, color: "white"}}>Lista Completa de Pacientes</span>
-        <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginLeft: 4 }}>
-          {carregando ? "..." : `${total} cadastrados · ${filtrados.length} exibidos`}
-        </span>
-      </div>
+      <AppHeader
+        centro={
+          <div style={{ display: "flex", alignItems: "baseline", gap: 10, whiteSpace: "nowrap" }}>
+            <span style={{ fontSize: 15, fontWeight: 800, color: "white" }}>Lista completa</span>
+            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.6)" }}>
+              {carregando ? "..." : `${total} cadastrados · ${filtrados.length} exibidos`}
+            </span>
+          </div>
+        }
+      />
 
       <div style={{ maxWidth: 1400, margin: "0 auto", padding: "20px 16px" }}>
 
