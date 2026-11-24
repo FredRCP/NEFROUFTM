@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { registrarDiurese, editarDiurese, excluirDiurese, buscarDiureses } from "@/lib/actions/pacientesExtra";
 import { createClient } from "@/lib/supabase/client";
 import { ModalDiurese } from "@/components/paciente/ModalDiurese";
@@ -52,7 +53,7 @@ function corUr(v: number) { return v > 100 ? "#dc2626" : v > 50 ? "#d97706" : "#
 
 // ─── Gráfico de diurese ───────────────────────────────────────────────────────
 
-function GraficoDiurese({ dados }: { dados: PontoDiurese[] }) {
+function GraficoDiurese({ dados, altura = 64 }: { dados: PontoDiurese[]; altura?: number }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -61,9 +62,10 @@ function GraficoDiurese({ dados }: { dados: PontoDiurese[] }) {
     const dpr = window.devicePixelRatio || 1;
     const rect = c.getBoundingClientRect();
     if (!rect.width) return;
-    c.width = rect.width * dpr; c.height = 64 * dpr;
+    c.width = rect.width * dpr; c.height = altura * dpr;
     const ctx = c.getContext("2d")!; ctx.scale(dpr, dpr);
-    const W = rect.width, H = 64, PT = 8, PB = 18, PL = 6, PR = 6;
+    const W = rect.width, H = altura, PT = 8, PB = 18, PL = 6, PR = 6;
+    const fs = altura > 100 ? 12 : 8;
     const iW = W - PL - PR, iH = H - PT - PB;
     const vals = dados.map(d => d.volume_ml);
     const mx = Math.max(...vals, 500);
@@ -74,7 +76,7 @@ function GraficoDiurese({ dados }: { dados: PontoDiurese[] }) {
     if (mx >= 400) {
       ctx.strokeStyle = "rgba(194,102,10,0.35)"; ctx.lineWidth = 1; ctx.setLineDash([3, 2]);
       ctx.beginPath(); ctx.moveTo(PL, ty(400)); ctx.lineTo(W - PR, ty(400)); ctx.stroke();
-      ctx.fillStyle = "rgba(194,102,10,0.5)"; ctx.font = "7px Inter"; ctx.textAlign = "left";
+      ctx.fillStyle = "rgba(194,102,10,0.5)"; ctx.font = `${fs - 1}px Inter`; ctx.textAlign = "left";
       ctx.fillText("oligúria", PL + 2, ty(400) - 2);
       ctx.setLineDash([]);
     }
@@ -93,13 +95,13 @@ function GraficoDiurese({ dados }: { dados: PontoDiurese[] }) {
       const isLast = i === dados.length - 1;
       ctx.beginPath(); ctx.arc(tx(i), ty(d.volume_ml), isLast ? 4 : 2.5, 0, Math.PI * 2);
       ctx.fillStyle = isLast ? cor : cor + "88"; ctx.fill();
-      ctx.fillStyle = "rgba(0,0,0,0.3)"; ctx.font = "8px Inter"; ctx.textAlign = "center";
+      ctx.fillStyle = "rgba(0,0,0,0.3)"; ctx.font = `${fs}px Inter`; ctx.textAlign = "center";
       ctx.fillText(fmtDataCurta(d.data), tx(i), H - 3);
     });
-  }, [dados]);
+  }, [dados, altura]);
 
   if (dados.length < 2) return null;
-  return <canvas ref={canvasRef} style={{ width: "100%", height: 64, display: "block", marginTop: 6 }} />;
+  return <canvas ref={canvasRef} style={{ width: "100%", height: altura, display: "block", marginTop: 6 }} />;
 }
 
 // ─── Componente principal ─────────────────────────────────────────────────────
@@ -116,7 +118,8 @@ export function PainelDireito({ acompanhamentoId, paciente, acompanhamento }: Pa
   const [diureses, setDiureses] = useState<PontoDiurese[]>([]);
   const [volume, setVolume] = useState("");
   const [horas, setHoras] = useState("24");
-  const [dataDiurese, setDataDiurese] = useState(() => new Date().toISOString().slice(0, 10));
+  const [dataDiurese, setDataDiurese] = useState(() => new Date().toLocaleDateString("sv-SE"));
+  const [graficoAberto, setGraficoAberto] = useState(false);
   const [modalDiurese, setModalDiurese] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -246,6 +249,27 @@ export function PainelDireito({ acompanhamentoId, paciente, acompanhamento }: Pa
 
         {/* Gráfico */}
         <GraficoDiurese dados={diureses} />
+        {diureses.length >= 2 && (
+          <button type="button" onClick={() => setGraficoAberto(true)}
+            style={{ marginTop: 4, width: "100%", padding: 4, background: "none", border: "none", fontSize: 11, fontWeight: 700, color: "var(--accent)", cursor: "pointer" }}>
+            🔍 Ampliar gráfico
+          </button>
+        )}
+        {graficoAberto && createPortal(
+          <div onClick={() => setGraficoAberto(false)}
+            style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+            <div onClick={e => e.stopPropagation()}
+              style={{ background: "var(--card)", borderRadius: "var(--nc-radius-lg)", padding: 20, width: "100%", maxWidth: 720, boxShadow: "var(--nc-shadow-md)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <p style={{ fontSize: 15, fontWeight: 800, color: "var(--text)", margin: 0 }}>💧 Diurese — evolução</p>
+                <button onClick={() => setGraficoAberto(false)}
+                  style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "var(--text3)" }}>✕</button>
+              </div>
+              <p style={{ fontSize: 12, color: "var(--text3)", margin: "4px 0 8px" }}>Linha tracejada: oligúria (400 mL/dia)</p>
+              <GraficoDiurese dados={diureses} altura={320} />
+            </div>
+          </div>,
+          document.body)}
 
         <button onClick={() => setModalDiurese(true)}
           style={{ marginTop: 8, width: "100%", padding: "7px 10px", borderRadius: "var(--nc-radius)", background: "var(--accent)", color: "white", border: "none", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>

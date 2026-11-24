@@ -169,6 +169,64 @@ const PERFIS: Record<string, { label: string; icon: string; numericos: string[];
   },
 };
 
+// ─── Categorias dos exames (dentro de cada subtópico) ─────────────────────────
+// Só organiza a tela: os valores continuam salvos com as mesmas chaves.
+
+const CATEGORIAS_EXAME = [
+  "Bioquímica",
+  "Hemograma e coagulação",
+  "Urina e proteinúria",
+  "Proteínas e eletroforese",
+  "Imunologia e complemento",
+  "Sorologias e infecção",
+  "Endócrino e metabólico",
+  "Imagem",
+] as const;
+
+const CATEGORIA_DO_CAMPO: Record<string, (typeof CATEGORIAS_EXAME)[number]> = {
+  // Bioquímica
+  creatinina: "Bioquímica", ureia: "Bioquímica", sodio: "Bioquímica", potassio: "Bioquímica",
+  calcio: "Bioquímica", calcio_ionico: "Bioquímica", fosforo: "Bioquímica", magnesio: "Bioquímica",
+  ph: "Bioquímica", bic: "Bioquímica", lactato: "Bioquímica", albumina: "Bioquímica",
+  acido_urico: "Bioquímica", glicemia: "Bioquímica", cpk: "Bioquímica", tgo: "Bioquímica",
+  tgp: "Bioquímica", fa: "Bioquímica", ggt: "Bioquímica", bilirrubina_total: "Bioquímica",
+  dhl: "Bioquímica", haptoglobina: "Bioquímica", clearance_cr: "Bioquímica",
+  // Hemograma e coagulação
+  hemoglobina: "Hemograma e coagulação", hematocrito: "Hemograma e coagulação",
+  plaquetas: "Hemograma e coagulação", tap: "Hemograma e coagulação",
+  ttpa: "Hemograma e coagulação", fibrinogenio: "Hemograma e coagulação",
+  coombs: "Hemograma e coagulação",
+  // Urina e proteinúria
+  eas: "Urina e proteinúria", dismorfismo: "Urina e proteinúria", rac: "Urina e proteinúria",
+  rpc: "Urina e proteinúria", proteinuria_24h: "Urina e proteinúria",
+  // Proteínas e eletroforese
+  beta2_micro: "Proteínas e eletroforese", eletroforese_ser: "Proteínas e eletroforese",
+  eletroforese_ur: "Proteínas e eletroforese", imunofixacao_ur: "Proteínas e eletroforese",
+  cadeias_leves: "Proteínas e eletroforese",
+  // Imunologia e complemento
+  c3: "Imunologia e complemento", c4: "Imunologia e complemento", c1q: "Imunologia e complemento",
+  iga: "Imunologia e complemento", aso: "Imunologia e complemento", fan: "Imunologia e complemento",
+  anca: "Imunologia e complemento", anti_gbm: "Imunologia e complemento",
+  anti_lkm: "Imunologia e complemento", antifosfolipides: "Imunologia e complemento",
+  crioglobulinas: "Imunologia e complemento", pla2r: "Imunologia e complemento",
+  // Sorologias e infecção
+  sorologias_hiv: "Sorologias e infecção", sorologias_hcv: "Sorologias e infecção",
+  sorologias_hbv: "Sorologias e infecção", sorologias_vdrl: "Sorologias e infecção",
+  urocultura: "Sorologias e infecção",
+  // Endócrino e metabólico
+  tsh: "Endócrino e metabólico", t4l: "Endócrino e metabólico", colesterol: "Endócrino e metabólico",
+  ldl: "Endócrino e metabólico", hdl: "Endócrino e metabólico", tg: "Endócrino e metabólico",
+  bhcg: "Endócrino e metabólico",
+  // Imagem
+  imagem: "Imagem",
+};
+
+function agruparPorCategoria(chaves: string[]) {
+  return CATEGORIAS_EXAME
+    .map(cat => ({ cat, chaves: chaves.filter(k => (CATEGORIA_DO_CAMPO[k] ?? "Bioquímica") === cat) }))
+    .filter(g => g.chaves.length > 0);
+}
+
 // ─── Gráfico Canvas genérico ──────────────────────────────────────────────────
 
 function MiniGrafico({ valores, datas, cor, refLine, label, unidade }: {
@@ -632,8 +690,11 @@ export function AbaExames({ acompanhamentoId, paciente, acompanhamento }: AbaExa
               </div>
 
               {/* Campos numéricos */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: "10px 14px", marginBottom: 16 }}>
-                {perfil.numericos.map(k => {
+              {agruparPorCategoria(perfil.numericos).map(({ cat, chaves }) => (
+              <div key={cat} style={{ marginBottom: 16 }}>
+              <p style={{ fontSize: 10, fontWeight: 700, color: "var(--accent)", textTransform: "uppercase", letterSpacing: "0.07em", margin: "0 0 8px" }}>{cat}</p>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: "10px 14px" }}>
+                {chaves.map(k => {
                   const cfg = CAMPOS_NUMERICOS.find(c => c.k === k);
                   if (!cfg) return null;
                   const v = formNum[k];
@@ -654,11 +715,15 @@ export function AbaExames({ acompanhamentoId, paciente, acompanhamento }: AbaExa
                   );
                 })}
               </div>
+              </div>
+              ))}
 
               {/* Campos texto */}
-              {perfil.textos.length > 0 && (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "10px 14px", marginBottom: 16 }}>
-                  {perfil.textos.map(k => {
+              {agruparPorCategoria(perfil.textos).map(({ cat, chaves }) => (
+              <div key={cat} style={{ marginBottom: 16 }}>
+              <p style={{ fontSize: 10, fontWeight: 700, color: "var(--accent)", textTransform: "uppercase", letterSpacing: "0.07em", margin: "0 0 8px" }}>{cat}</p>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "10px 14px" }}>
+                  {chaves.map(k => {
                     const cfg = CAMPOS_TEXTO.find(c => c.k === k);
                     if (!cfg) return null;
                     return (
@@ -670,7 +735,8 @@ export function AbaExames({ acompanhamentoId, paciente, acompanhamento }: AbaExa
                     );
                   })}
                 </div>
-              )}
+              </div>
+              ))}
 
               {/* Outros exames — lista dinâmica */}
               <div style={{ borderTop: "1px solid var(--border)", paddingTop: 12, marginTop: 4 }}>

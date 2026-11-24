@@ -5,6 +5,8 @@ import {
   adicionarEvolucao, editarEvolucao, excluirEvolucao,
 } from "@/lib/actions/acompanhamentos";
 import { PainelDireito } from "@/components/paciente/PainelDireito";
+import { ModalDiurese } from "@/components/paciente/ModalDiurese";
+import { buscarDiureses } from "@/lib/actions/pacientesExtra";
 import type { Evolucao, Medico, Paciente, AcompanhamentoNefro } from "@/types/database";
 
 interface AbaEvolucoesProps {
@@ -26,8 +28,31 @@ function hojeLocal() {
   return new Date().toLocaleDateString("sv-SE"); // AAAA-MM-DD no fuso local
 }
 function isHoje(iso: string) {
-  return iso.slice(0, 10) === new Date().toISOString().slice(0, 10);
+  return new Date(iso).toLocaleDateString("sv-SE") === hojeLocal();
 }
+
+// Modelo pronto para a evolução diária (o médico completa os campos entre ___)
+const MODELO_EVOLUCAO = `EVOLUÇÃO NEFROLÓGICA
+
+S:
+
+O:
+- PA: ___ mmHg | FC: ___ bpm | FR: ___ irpm | Tax: ___ °C | SpO2: ___%
+- Peso: ___ kg (atual) | ___ kg (admissão)
+- Balanço hídrico 24h: entrada ___ mL | saída ___ mL | balanço ___ mL
+- Diurese: ___ mL em ___ h (ver painel ao lado)
+- Exame físico:
+- Laboratório: Cr ___ | Ur ___ | K ___ | Na ___ | HCO3 ___ | Ca ___ | P ___ | Hb ___
+
+A:
+
+P:
+- Dieta:
+- Hidratação / balanço alvo:
+- Medicações (nefrotóxicos, ajuste de doses):
+- Terapia dialítica:
+- Exames solicitados:
+- Próxima avaliação:`;
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 
@@ -45,10 +70,24 @@ export function AbaEvolucoes({ acompanhamentoId, acompanhamento, evolucoes, usua
 
   const ehAutor = evolucaoSelecionada?.autor_id === usuarioId;
 
-  // Nova evolução: abre o editor em branco (diurese não é obrigatória)
-  function handleNovaEvolucao() {
+  const [pedindoDiurese, setPedindoDiurese] = useState(false);
+  const [versaoPainel, setVersaoPainel] = useState(0);
+
+  function abrirEditorNova() {
     setNovaEvolucao(true); setEvolucaoSelecionada(null); setModoEdicao(false);
     setTextoNova("");
+  }
+
+  // Diurese de hoje é obrigatória para iniciar uma nova evolução
+  async function handleNovaEvolucao() {
+    const r = await buscarDiureses(acompanhamentoId);
+    const temHoje = r.sucesso && (r.dados as { data: string }[]).some(d => d.data === hojeLocal());
+    if (temHoje) abrirEditorNova();
+    else setPedindoDiurese(true);
+  }
+
+  function inserirModelo() {
+    setTextoNova(prev => (prev.trim() ? `${prev.trimEnd()}\n\n${MODELO_EVOLUCAO}` : MODELO_EVOLUCAO));
   }
 
   function copiarAnterior() {
@@ -189,6 +228,11 @@ export function AbaEvolucoes({ acompanhamentoId, acompanhamento, evolucoes, usua
                 style={{ fontSize: 11, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font)" }}>
                 Copiar anterior
               </button>
+              <button
+                onClick={inserirModelo}
+                style={{ fontSize: 11, color: "var(--accent)", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font)", fontWeight: 700 }}>
+                📋 Modelo
+              </button>
             </div>
             <div style={{ flex: 1, padding: "16px 20px 0", display: "flex", flexDirection: "column", overflow: "hidden" }}>
               <textarea autoFocus value={textoNova} onChange={e => setTextoNova(e.target.value)}
@@ -279,6 +323,7 @@ export function AbaEvolucoes({ acompanhamentoId, acompanhamento, evolucoes, usua
       {/* ── COLUNA DIREITA: diurese + TFG + exames ───────────────────── */}
       <div style={{ overflow: "hidden", background: "var(--card)", borderLeft: "1px solid var(--border)" }}>
         <PainelDireito
+          key={versaoPainel}
           acompanhamentoId={acompanhamentoId}
           paciente={paciente}
           acompanhamento={acompanhamento}
@@ -360,6 +405,10 @@ export function AbaEvolucoes({ acompanhamentoId, acompanhamento, evolucoes, usua
                     style={{ fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer" }}>
                     Copiar anterior
                   </button>
+                  <button onClick={inserirModelo}
+                    style={{ fontSize: 12, color: "var(--accent)", background: "none", border: "none", cursor: "pointer", fontWeight: 700, marginLeft: 12 }}>
+                    📋 Modelo
+                  </button>
                 </div>
                 <textarea autoFocus value={textoNova} onChange={e => setTextoNova(e.target.value)}
                   placeholder="Evolução clínica do dia..."
@@ -417,7 +466,7 @@ export function AbaEvolucoes({ acompanhamentoId, acompanhamento, evolucoes, usua
         {/* Aba Exames/Diurese */}
         {abaMobile === "exames" && (
           <div style={{ height: "100%", overflow: "hidden" }}>
-            <PainelDireito acompanhamentoId={acompanhamentoId} paciente={paciente} acompanhamento={acompanhamento} />
+            <PainelDireito key={versaoPainel} acompanhamentoId={acompanhamentoId} paciente={paciente} acompanhamento={acompanhamento} />
           </div>
         )}
       </div>
@@ -442,6 +491,14 @@ export function AbaEvolucoes({ acompanhamentoId, acompanhamento, evolucoes, usua
         ))}
       </div>
     </div>
+      {pedindoDiurese && (
+        <ModalDiurese
+          acompanhamentoId={acompanhamentoId}
+          aviso="Para iniciar a evolução de hoje, preencha a diurese."
+          onClose={() => setPedindoDiurese(false)}
+          onSalvo={() => { setVersaoPainel(v => v + 1); setPedindoDiurese(false); abrirEditorNova(); }}
+        />
+      )}
     </>
   );
 }

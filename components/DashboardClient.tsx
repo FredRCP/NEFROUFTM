@@ -54,6 +54,39 @@ function compararPorSetorELeito(a: LinhaDashboard, b: LinhaDashboard): number {
 
 type FiltroStatus = "todos" | "pendentes" | "avaliados" | "hd_hoje";
 
+// Aviso a partir de 16h30 (horário do aparelho, Brasília): pacientes não avaliados e pendências abertas
+const HORA_AVISO_MIN = 16 * 60 + 30;
+
+function AvisoFimDoDia({ naoAvaliados, comPendencia }: { naoAvaliados: number; comPendencia: number }) {
+  const [agora, setAgora] = useState(() => new Date());
+  const [fechado, setFechado] = useState(false);
+
+  useEffect(() => {
+    const t = setInterval(() => setAgora(new Date()), 60_000);
+    return () => clearInterval(t);
+  }, []);
+
+  const minutos = agora.getHours() * 60 + agora.getMinutes();
+  if (fechado || minutos < HORA_AVISO_MIN) return null;
+  if (naoAvaliados === 0 && comPendencia === 0) return null;
+
+  return (
+    <div className="mb-4 flex items-start justify-between gap-3 rounded-(--nc-radius) px-4 py-3 text-sm"
+      style={{ background: "var(--amber-dim)", border: "1px solid rgba(194,102,10,0.35)", color: "var(--amber)" }}>
+      <div>
+        <p className="font-bold">⏰ Fim do dia se aproximando</p>
+        <p className="mt-0.5" style={{ color: "var(--text2)" }}>
+          {naoAvaliados > 0 && <>{naoAvaliados} paciente(s) ainda não avaliado(s)</>}
+          {naoAvaliados > 0 && comPendencia > 0 && " · "}
+          {comPendencia > 0 && <>{comPendencia} com pendência(s) em aberto</>}
+        </p>
+      </div>
+      <button type="button" onClick={() => setFechado(true)} aria-label="Fechar aviso"
+        style={{ background: "none", border: "none", fontSize: 16, cursor: "pointer", color: "var(--text3)", lineHeight: 1 }}>✕</button>
+    </div>
+  );
+}
+
 export function DashboardClient() {
   const supabase = createClient();
   const [linhas, setLinhas] = useState<LinhaDashboard[]>([]);
@@ -154,6 +187,10 @@ export function DashboardClient() {
 
   return (
     <div className="p-4 sm:p-6" style={{ background: "var(--bg)" }}>
+      <AvisoFimDoDia
+        naoAvaliados={pendentes}
+        comPendencia={linhasPorBusca.filter((l) => l.pendencias.length > 0).length}
+      />
       {pendentes > 0 && (
         <div className="mb-4 rounded-(--nc-radius) px-4 py-2.5 text-sm"
           style={{ background: "var(--red-dim)", color: "var(--red)", border: "1px solid rgba(176,48,32,0.2)" }}>
