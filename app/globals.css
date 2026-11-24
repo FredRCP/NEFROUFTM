@@ -66,11 +66,36 @@ html, body {
 .nc-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(30,79,136,0.12); }
 .nc-input::placeholder { color: var(--text3); }
 
-/* Celular: campos com 16px impedem o zoom automático do iPhone/Android ao tocar */
+/* ── Celular (abaixo de 640px) ───────────────────────────────────────
+   1. Sem rolagem lateral: a tela só desliza para cima e para baixo.
+   2. Campos de texto com 16px (sem zoom automático) e largura total.
+   3. Campos em linha empilham, um abaixo do outro, em tela cheia.   */
 @media (max-width: 639px) {
-  input.nc-input, textarea.nc-input, select.nc-input,
-  input[type="text"], input[type="number"], input[type="search"], input[type="date"], input[type="password"], textarea, select {
-    font-size: 16px;
+  html, body { overflow-x: hidden; max-width: 100vw; }
+
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+    width: 100% !important;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  /* Grades que contêm campos viram uma coluna */
+  .grid:has(> input), .grid:has(> select), .grid:has(> textarea),
+  .grid:has(> div input), .grid:has(> div select), .grid:has(> div textarea) {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Linhas flex com campo (ex.: campo + botão) empilham */
+  .flex:has(> input), .flex:has(> select), .flex:has(> textarea) {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .flex:has(> input) > *, .flex:has(> select) > *, .flex:has(> textarea) > * {
+    min-width: 0;
   }
 }
 textarea.nc-input { resize: none; }
