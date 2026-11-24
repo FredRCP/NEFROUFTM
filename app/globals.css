@@ -65,6 +65,14 @@ html, body {
 }
 .nc-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(30,79,136,0.12); }
 .nc-input::placeholder { color: var(--text3); }
+
+/* Celular: campos com 16px impedem o zoom automático do iPhone/Android ao tocar */
+@media (max-width: 639px) {
+  input.nc-input, textarea.nc-input, select.nc-input,
+  input[type="text"], input[type="number"], input[type="search"], input[type="date"], input[type="password"], textarea, select {
+    font-size: 16px;
+  }
+}
 textarea.nc-input { resize: none; }
 
 /* ── Botões ── */
