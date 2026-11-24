@@ -92,6 +92,11 @@ input.nc-field[type="date"] {
   text-align: left;
   overflow: hidden;
 }
+/* Colunas do cadastro não podem "esticar" pela altura: no celular, cada campo tem a altura que precisa */
+@media (max-width: 639px) {
+  .nc-group { flex: none !important; }
+}
+input.nc-field { line-height: normal; }
 input.nc-field[type="date"]::-webkit-date-and-time-value { text-align: left; margin: 0; }
 input.nc-field[type="date"]::-webkit-datetime-edit { padding: 0; }
 input.nc-field[type="date"]::-webkit-date-and-time-value,
