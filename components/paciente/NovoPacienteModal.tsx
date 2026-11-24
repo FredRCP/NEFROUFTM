@@ -17,10 +17,11 @@ const COMORBIDADES_OPCOES = [
  "Neoplasia", "Obesidade", "Tabagismo", "Transplante_renal",
 ];
 
-// Mesmos valores aceitos pelo banco (check em pacientes.etiologia_drc)
+// Mesmos valores aceitos pelo banco (check em pacientes.etiologia_drc — ver migration 20261124_etiologia_drc.sql)
 const ETIOLOGIAS_DRC = [
  "Nefropatia_diabetica", "Nefroesclerose_hipertensiva", "DRPAD",
  "Glomerulopatia", "Nefrite_tubulo_intersticial", "Obstrutiva",
+ "Congenita_hereditaria", "Doenca_renal_policistica", "Nefropatia_por_refluxo",
  "Indeterminada", "Outras",
 ];
 
