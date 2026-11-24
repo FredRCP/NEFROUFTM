@@ -66,6 +66,25 @@ html, body {
 .nc-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(30,79,136,0.12); }
 .nc-input::placeholder { color: var(--text3); }
 
+/* ── Campos do cadastro: mesma altura, largura e tipografia ── */
+.nc-field {
+  height: 44px;
+  line-height: 1.2;
+  font-size: 15px;
+  padding: 0 12px;
+}
+select.nc-field {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 36px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%237a94a8' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 13px center;
+}
+input.nc-field[type="date"] { min-width: 0; }
+textarea.nc-field { height: auto; min-height: 64px; padding: 10px 12px; line-height: 1.4; }
+.nc-field-btn { height: 44px; min-height: 44px; }
+
 /* ── Celular (abaixo de 640px) ───────────────────────────────────────
    1. Sem rolagem lateral: a tela só desliza para cima e para baixo.
    2. Campos de texto com 16px (sem zoom automático) e largura total.
@@ -99,6 +118,17 @@ html, body {
   }
 }
 textarea.nc-input { resize: none; }
+
+/* Abas da ficha: rolam na horizontal com um degradê na borda direita (sinal de "tem mais") */
+.ficha-tabs { padding-right: 8px; }
+.ficha-tabs::-webkit-scrollbar { display: none; }
+@media (max-width: 639px) {
+  .ficha-tabs {
+    padding-right: 28px;
+    -webkit-mask-image: linear-gradient(to right, #000 85%, transparent);
+            mask-image: linear-gradient(to right, #000 85%, transparent);
+  }
+}
 
 /* ── Botões ── */
 .nc-btn {

@@ -317,7 +317,7 @@ export function NovoPacienteModal({
     }
   }
 
-  const inputClass = "nc-input";
+  const inputClass = "nc-input nc-field";
   const labelClass = "nc-label";
 
   return (
@@ -389,7 +389,7 @@ export function NovoPacienteModal({
                     type="button"
                     onClick={handleVerificarRg}
                     disabled={verificando || !rg.trim()}
-                    className="nc-btn nc-btn-primary cursor-pointer"
+                    className="nc-btn nc-btn-primary nc-field-btn cursor-pointer"
                   >
                     {verificando ? "Verificando..." : "Verificar"}
                   </button>
@@ -550,8 +550,8 @@ export function NovoPacienteModal({
                       placeholder="Outro diagnóstico (ex.: amiloidose)"
                       className={inputClass}
                     />
-                    <button type="button" onClick={adicionarComorbidadeOutra} className="nc-chip cursor-pointer shrink-0"
-                      style={{ padding: "6px 12px", fontSize: 13, minHeight: 36 }}>
+                    <button type="button" onClick={adicionarComorbidadeOutra} className="nc-chip nc-field-btn cursor-pointer shrink-0"
+                      style={{ padding: "0 14px", fontSize: 13 }}>
                       + Adicionar
                     </button>
                   </div>
@@ -864,14 +864,15 @@ function Section({ label, children }: { label: string; children: React.ReactNode
 }
 
 function Row({ children }: { children: React.ReactNode }) {
-  return <div className="mb-3 flex flex-wrap gap-3">{children}</div>;
+  // Celular: campos um abaixo do outro, em largura total. A partir de sm: lado a lado.
+  return <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:flex-wrap">{children}</div>;
 }
 
 function Group({
   label, flex, required, children,
 }: { label: string; flex?: number; required?: boolean; children: React.ReactNode }) {
   return (
-    <div className="flex min-w-35 flex-col gap-1" style={{ flex: flex || 1 }}>
+    <div className="flex w-full min-w-0 flex-col gap-1 sm:w-auto sm:min-w-35" style={{ flex: flex || 1 }}>
       <span className="nc-label" style={{ marginBottom: 0 }}>
         {label}
         {required && <span style={{ color: "var(--red)" }}> *</span>}

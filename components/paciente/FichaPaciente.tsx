@@ -35,6 +35,7 @@ export function FichaPaciente({
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       {/* Abas */}
       <div
+        className="ficha-tabs"
         style={{
           flexShrink: 0,
           background: "var(--card)",
@@ -43,7 +44,6 @@ export function FichaPaciente({
           overflowX: "auto",
           scrollbarWidth: "none",
           paddingLeft: 8,
-          paddingRight: 8,
         }}
       >
         {ABAS.map((aba) => (
