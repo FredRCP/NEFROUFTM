@@ -40,6 +40,8 @@ export function FichaPaciente({
           background: "var(--card)",
           borderBottom: "2px solid var(--border)",
           display: "flex",
+          overflowX: "auto",
+          scrollbarWidth: "none",
           paddingLeft: 8,
           paddingRight: 8,
         }}

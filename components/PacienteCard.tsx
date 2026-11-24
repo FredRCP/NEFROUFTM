@@ -167,7 +167,7 @@ export function PacienteCard({ acompanhamento, paciente, internacao, pendencias 
           <button
             onClick={() => setMenuHd((v) => !v)}
             disabled={isPending}
-            className="flex w-full items-center justify-center gap-1.5 rounded-full px-2 py-1.5 text-[11px] font-bold transition"
+            className="flex min-h-9 w-full items-center justify-center gap-1.5 rounded-full px-2 py-1.5 text-[11px] font-bold transition"
             style={{ background: sit.bg, color: sit.cor, border: "none", cursor: "pointer" }}
           >
             <span className="inline-block h-2 w-2 rounded-full" style={{ background: sit.cor }} />

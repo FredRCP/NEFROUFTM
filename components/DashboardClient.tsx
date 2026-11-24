@@ -153,7 +153,7 @@ export function DashboardClient() {
   ];
 
   return (
-    <div className="p-6" style={{ background: "var(--bg)" }}>
+    <div className="p-4 sm:p-6" style={{ background: "var(--bg)" }}>
       {pendentes > 0 && (
         <div className="mb-4 rounded-(--nc-radius) px-4 py-2.5 text-sm"
           style={{ background: "var(--red-dim)", color: "var(--red)", border: "1px solid rgba(176,48,32,0.2)" }}>
@@ -174,20 +174,20 @@ export function DashboardClient() {
             style={{ paddingLeft: 36 }}
           />
         </div>
-        <button onClick={() => setModalAberto(true)} className="nc-btn nc-btn-primary shrink-0">
+        <button onClick={() => setModalAberto(true)} className="nc-btn nc-btn-primary hidden shrink-0 sm:inline-flex">
           <span className="text-base leading-none">+</span> Novo paciente
         </button>
       </div>
 
       {/* Filtro de status */}
-      <div className="mb-5 flex flex-wrap gap-2">
+      <div className="mb-5 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible">
         {opcoesFiltro.map((op) => {
           const ativo = filtro === op.id;
           return (
             <button
               key={op.id}
               onClick={() => setFiltro(op.id)}
-              className="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition"
+              className="flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition"
               style={{
                 background: ativo ? op.cor : "var(--card)",
                 color: ativo ? "white" : op.cor,
@@ -232,7 +232,7 @@ export function DashboardClient() {
                   linhasDoGrupo.length === 0 ? (
                     <p className="px-1 text-xs" style={{ color: "var(--text3)" }}>Nenhum paciente neste grupo.</p>
                   ) : (
-                    <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(170px, 260px))" }}>
+                    <div className="grid grid-cols-2 gap-2.5 sm:gap-3 sm:[grid-template-columns:repeat(auto-fill,minmax(170px,260px))]">
                       {linhasDoGrupo.map((linha) => (
                         <PacienteCard
                           key={linha.acompanhamento.id}
@@ -250,6 +250,15 @@ export function DashboardClient() {
           })}
         </div>
       )}
+
+      <button
+        onClick={() => setModalAberto(true)}
+        aria-label="Novo paciente"
+        className="fixed bottom-5 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full text-3xl font-light text-white shadow-lg sm:hidden"
+        style={{ background: "var(--accent)" }}
+      >
+        +
+      </button>
 
       {modalAberto && (
         <NovoPacienteModal

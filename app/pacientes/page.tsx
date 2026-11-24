@@ -206,6 +206,7 @@ export default function PacientesPage() {
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
       <AppHeader
+        voltarHref="/dashboard"
         centro={
           <div style={{ display: "flex", alignItems: "baseline", gap: 10, whiteSpace: "nowrap" }}>
             <span style={{ fontSize: 15, fontWeight: 800, color: "white" }}>Lista completa</span>
