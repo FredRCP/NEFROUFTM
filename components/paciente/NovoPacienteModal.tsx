@@ -328,7 +328,7 @@ export function NovoPacienteModal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="flex w-full max-w-3xl flex-col overflow-hidden sm:rounded-2xl"
+        className="flex max-h-[92dvh] w-full max-w-3xl flex-col overflow-hidden sm:max-h-[88vh] sm:rounded-2xl"
         style={{
           background: "var(--card)",
           boxShadow: "0 -4px 32px rgba(0,0,0,0.2)",
