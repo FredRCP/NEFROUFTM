@@ -48,12 +48,13 @@ export default async function DetalhePacientePage({
       <AppHeader
         nomeMedico={medico?.nome ?? user.email ?? "Usuário"}
         titulo={medico?.titulo}
+        voltarHref="/dashboard"
         centro={
           <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, whiteSpace: "nowrap" }}>
             <span style={{ fontSize: 15, fontWeight: 800, color: "white", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>
               {(paciente?.nome ?? acompanhamento.paciente.nome).toUpperCase()}
             </span>
-            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", fontFamily: "var(--mono)" }}>
+            <span className="hidden sm:inline" style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", fontFamily: "var(--mono)" }}>
               RG {paciente?.rg_hospitalar ?? acompanhamento.paciente.rg_hospitalar}
             </span>
             <span style={{ fontSize: 12, color: "rgba(255,255,255,0.85)", fontWeight: 600 }}>🛏️ {leito}</span>

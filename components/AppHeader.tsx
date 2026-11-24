@@ -10,6 +10,8 @@ interface AppHeaderProps {
   titulo?: "Dr" | "Dra" | null;
   /** Conteúdo centralizado da barra (título da página, nome do paciente...). */
   centro?: ReactNode;
+  /** No celular, mostra uma seta de volta no lugar da marca. */
+  voltarHref?: string;
 }
 
 interface MedicoBasico { nome: string; titulo: "Dr" | "Dra" | null }
@@ -27,7 +29,7 @@ function getPrimeiroNome(nome: string): string {
 
 const LINK_MENU = "flex w-full items-center gap-2 px-4 py-2.5 text-sm font-semibold text-(--text2) transition hover:bg-(--bg2)";
 
-export function AppHeader({ nomeMedico, titulo, centro }: AppHeaderProps) {
+export function AppHeader({ nomeMedico, titulo, centro, voltarHref }: AppHeaderProps) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const [saindo, setSaindo] = useState(false);
@@ -61,12 +63,27 @@ export function AppHeader({ nomeMedico, titulo, centro }: AppHeaderProps) {
 
   return (
     <div
-      className="nc-topbar"
-      style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 12 }}
+      className="nc-topbar sticky top-0 z-30 grid shrink-0 items-center gap-2 grid-cols-[auto_1fr_auto] sm:gap-3 sm:grid-cols-[1fr_auto_1fr]"
+      style={{ display: "grid" }}
     >
-      {/* Esquerda: marca (leva à página principal) */}
-      <div style={{ minWidth: 0 }}>
-        <Link href="/dashboard" title="Página principal" style={{ textDecoration: "none" }}>
+      {/* Esquerda: seta de volta no celular; marca no computador (e no celular, quando não há volta) */}
+      <div className="flex min-w-0 items-center gap-2">
+        {voltarHref && (
+          <Link
+            href={voltarHref}
+            aria-label="Voltar"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white sm:hidden"
+            style={{ textDecoration: "none", background: "rgba(255,255,255,0.12)" }}
+          >
+            <span style={{ fontSize: 22, lineHeight: 1 }}>‹</span>
+          </Link>
+        )}
+        <Link
+          href="/dashboard"
+          title="Página principal"
+          className={voltarHref ? "hidden sm:inline-block" : "inline-block"}
+          style={{ textDecoration: "none" }}
+        >
           <span className="text-base font-extrabold text-white tracking-tight">
             NEFRO<span className="font-medium text-white/45">-UFTM</span>
           </span>
@@ -74,12 +91,12 @@ export function AppHeader({ nomeMedico, titulo, centro }: AppHeaderProps) {
       </div>
 
       {/* Centro: contexto da página */}
-      <div style={{ minWidth: 0, maxWidth: "100%", display: "flex", justifyContent: "center", overflow: "hidden" }}>
+      <div className="flex min-w-0 justify-center overflow-hidden">
         {centro}
       </div>
 
       {/* Direita: navegação e perfil */}
-      <div className="relative flex items-center justify-end gap-2.5" style={{ minWidth: 0 }}>
+      <div className="relative flex items-center justify-end gap-2.5">
         <Link
           href="/pacientes"
           className="hidden sm:flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold text-white/85 transition hover:bg-white/10 hover:text-white"
