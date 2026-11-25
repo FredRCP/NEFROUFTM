@@ -169,6 +169,64 @@ const PERFIS: Record<string, { label: string; icon: string; numericos: string[];
   },
 };
 
+// ─── Categorias dos exames (dentro de cada subtópico) ─────────────────────────
+// Só organiza a tela: os valores continuam salvos com as mesmas chaves.
+
+const CATEGORIAS_EXAME = [
+  "Bioquímica",
+  "Hemograma e coagulação",
+  "Urina e proteinúria",
+  "Proteínas e eletroforese",
+  "Imunologia e complemento",
+  "Sorologias e infecção",
+  "Endócrino e metabólico",
+  "Imagem",
+] as const;
+
+const CATEGORIA_DO_CAMPO: Record<string, (typeof CATEGORIAS_EXAME)[number]> = {
+  // Bioquímica
+  creatinina: "Bioquímica", ureia: "Bioquímica", sodio: "Bioquímica", potassio: "Bioquímica",
+  calcio: "Bioquímica", calcio_ionico: "Bioquímica", fosforo: "Bioquímica", magnesio: "Bioquímica",
+  ph: "Bioquímica", bic: "Bioquímica", lactato: "Bioquímica", albumina: "Bioquímica",
+  acido_urico: "Bioquímica", glicemia: "Bioquímica", cpk: "Bioquímica", tgo: "Bioquímica",
+  tgp: "Bioquímica", fa: "Bioquímica", ggt: "Bioquímica", bilirrubina_total: "Bioquímica",
+  dhl: "Bioquímica", haptoglobina: "Bioquímica", clearance_cr: "Bioquímica",
+  // Hemograma e coagulação
+  hemoglobina: "Hemograma e coagulação", hematocrito: "Hemograma e coagulação",
+  plaquetas: "Hemograma e coagulação", tap: "Hemograma e coagulação",
+  ttpa: "Hemograma e coagulação", fibrinogenio: "Hemograma e coagulação",
+  coombs: "Hemograma e coagulação",
+  // Urina e proteinúria
+  eas: "Urina e proteinúria", dismorfismo: "Urina e proteinúria", rac: "Urina e proteinúria",
+  rpc: "Urina e proteinúria", proteinuria_24h: "Urina e proteinúria",
+  // Proteínas e eletroforese
+  beta2_micro: "Proteínas e eletroforese", eletroforese_ser: "Proteínas e eletroforese",
+  eletroforese_ur: "Proteínas e eletroforese", imunofixacao_ur: "Proteínas e eletroforese",
+  cadeias_leves: "Proteínas e eletroforese",
+  // Imunologia e complemento
+  c3: "Imunologia e complemento", c4: "Imunologia e complemento", c1q: "Imunologia e complemento",
+  iga: "Imunologia e complemento", aso: "Imunologia e complemento", fan: "Imunologia e complemento",
+  anca: "Imunologia e complemento", anti_gbm: "Imunologia e complemento",
+  anti_lkm: "Imunologia e complemento", antifosfolipides: "Imunologia e complemento",
+  crioglobulinas: "Imunologia e complemento", pla2r: "Imunologia e complemento",
+  // Sorologias e infecção
+  sorologias_hiv: "Sorologias e infecção", sorologias_hcv: "Sorologias e infecção",
+  sorologias_hbv: "Sorologias e infecção", sorologias_vdrl: "Sorologias e infecção",
+  urocultura: "Sorologias e infecção",
+  // Endócrino e metabólico
+  tsh: "Endócrino e metabólico", t4l: "Endócrino e metabólico", colesterol: "Endócrino e metabólico",
+  ldl: "Endócrino e metabólico", hdl: "Endócrino e metabólico", tg: "Endócrino e metabólico",
+  bhcg: "Endócrino e metabólico",
+  // Imagem
+  imagem: "Imagem",
+};
+
+function agruparPorCategoria(chaves: string[]) {
+  return CATEGORIAS_EXAME
+    .map(cat => ({ cat, chaves: chaves.filter(k => (CATEGORIA_DO_CAMPO[k] ?? "Bioquímica") === cat) }))
+    .filter(g => g.chaves.length > 0);
+}
+
 // ─── Gráfico Canvas genérico ──────────────────────────────────────────────────
 
 function MiniGrafico({ valores, datas, cor, refLine, label, unidade }: {
@@ -182,50 +240,58 @@ function MiniGrafico({ valores, datas, cor, refLine, label, unidade }: {
     const dpr = window.devicePixelRatio || 1;
     const rect = c.getBoundingClientRect();
     if (!rect.width) return;
-    c.width = rect.width * dpr; c.height = 80 * dpr;
+    c.width = rect.width * dpr; c.height = 120 * dpr;
     const ctx = c.getContext("2d")!; ctx.scale(dpr, dpr);
-    const W = rect.width, H = 80, PT = 10, PB = 18, PL = 6, PR = 6;
+    const W = rect.width, H = 120, PT = 10, PB = 22, PL = 8, PR = 8;
     const mn = Math.min(...valores) * 0.88, mx = Math.max(...valores) * 1.12;
-    const range = mx - mn || 1;
-    const tx = (i: number) => PL + (i / (valores.length - 1)) * (W - PL - PR);
-    const ty = (v: number) => PT + (1 - (v - mn) / range) * (H - PT - PB);
+    const tx = (i: number) => PL + i * (W - PL - PR) / (valores.length - 1);
+    const ty = (v: number) => PT + (1 - (v - mn) / (mx - mn || 1)) * (H - PT - PB);
+
     if (refLine && refLine > mn && refLine < mx) {
-      ctx.strokeStyle = "rgba(0,0,0,0.12)"; ctx.lineWidth = 0.8; ctx.setLineDash([3,2]);
-      ctx.beginPath(); ctx.moveTo(PL, ty(refLine)); ctx.lineTo(W-PR, ty(refLine)); ctx.stroke(); ctx.setLineDash([]);
+      ctx.strokeStyle = "rgba(0,0,0,0.1)"; ctx.lineWidth = 0.8; ctx.setLineDash([4, 3]);
+      ctx.beginPath(); ctx.moveTo(PL, ty(refLine)); ctx.lineTo(W - PR, ty(refLine)); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle = "rgba(0,0,0,0.35)"; ctx.font = "bold 9px Inter, sans-serif"; ctx.textAlign = "left";
+      ctx.fillText(String(refLine), PL + 2, ty(refLine) - 3);
     }
+
     ctx.beginPath(); ctx.moveTo(tx(0), ty(valores[0]));
-    valores.forEach((v,i) => ctx.lineTo(tx(i), ty(v)));
-    ctx.lineTo(tx(valores.length-1), H-PB); ctx.lineTo(tx(0), H-PB); ctx.closePath();
-    ctx.fillStyle = cor + "20"; ctx.fill();
+    valores.forEach((v, i) => ctx.lineTo(tx(i), ty(v)));
+    ctx.lineTo(tx(valores.length - 1), H - PB); ctx.lineTo(tx(0), H - PB); ctx.closePath();
+    ctx.fillStyle = cor + "1e"; ctx.fill();
+
     ctx.beginPath(); ctx.moveTo(tx(0), ty(valores[0]));
-    valores.forEach((v,i) => ctx.lineTo(tx(i), ty(v)));
-    ctx.strokeStyle = cor; ctx.lineWidth = 2; ctx.lineJoin = "round"; ctx.stroke();
-    valores.forEach((v,i) => {
-      ctx.beginPath(); ctx.arc(tx(i), ty(v), i === valores.length-1 ? 4 : 2.5, 0, Math.PI*2);
-      ctx.fillStyle = i === valores.length-1 ? cor : cor+"88"; ctx.fill();
-      if (i === valores.length-1 || valores.length <= 5) {
-        const lbl = v%1!==0 ? v.toFixed(v<10?2:1) : String(v);
-        ctx.fillStyle = cor; ctx.font = "bold 9px Inter"; ctx.textAlign = "center";
-        ctx.fillText(lbl, tx(i), ty(v)-5);
+    valores.forEach((v, i) => ctx.lineTo(tx(i), ty(v)));
+    ctx.strokeStyle = cor; ctx.lineWidth = 2.2; ctx.lineJoin = "round"; ctx.stroke();
+
+    valores.forEach((v, i) => {
+      const ultimo = i === valores.length - 1;
+      ctx.beginPath(); ctx.arc(tx(i), ty(v), ultimo ? 5 : 3, 0, Math.PI * 2);
+      ctx.fillStyle = ultimo ? cor : cor + "88"; ctx.fill();
+      if (ultimo || valores.length <= 6) {
+        const lbl = v % 1 !== 0 ? v.toFixed(v < 10 ? 2 : 1) : String(v);
+        ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.font = "bold 10px Inter, monospace"; ctx.textAlign = "center";
+        ctx.fillText(lbl, tx(i), ty(v) - 8);
       }
     });
-    ctx.fillStyle = "rgba(0,0,0,0.3)"; ctx.font = "8px Inter"; ctx.textAlign = "center";
-    datas.forEach((d,i) => {
-      if (valores.length <= 5 || i === 0 || i === valores.length-1) ctx.fillText(d, tx(i), H-3);
+
+    ctx.fillStyle = "rgba(0,0,0,0.4)"; ctx.font = "9px Inter, sans-serif"; ctx.textAlign = "center";
+    datas.forEach((d, i) => {
+      if (valores.length <= 6 || i === 0 || i === valores.length - 1 || i % Math.ceil(valores.length / 4) === 0)
+        ctx.fillText(d, tx(i), H - 5);
     });
   }, [valores, datas, cor, refLine]);
 
-  const ultimo = valores[valores.length-1];
+  const ultimo = valores[valores.length - 1];
   const cfg = CAMPOS_NUMERICOS.find(c => c.l === label);
   return (
-    <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "var(--nc-radius-lg)", overflow: "hidden" }}>
-      <div style={{ padding: "8px 12px 4px", display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-        <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text2)" }}>{label}</span>
-        <span style={{ fontSize: 15, fontWeight: 900, fontFamily: "var(--mono)", color: cfg ? corValor(ultimo, cfg.normal, cfg.alerta) : cor }}>
-          {ultimo} <span style={{ fontSize: 9, fontWeight: 400, color: "var(--text3)" }}>{unidade}</span>
+    <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "var(--nc-radius-lg)", padding: "10px 12px", boxShadow: "var(--nc-shadow-sm)", minHeight: 180 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
+        <span style={{ fontSize: 12, color: "var(--text2)", fontWeight: 700 }}>{label}</span>
+        <span style={{ fontSize: 16, fontWeight: 800, fontFamily: "var(--mono)", fontVariantNumeric: "tabular-nums", color: cfg ? corValor(ultimo, cfg.normal, cfg.alerta) : cor }}>
+          {ultimo} <span style={{ fontSize: 10, fontWeight: 400, color: "var(--text3)" }}>{unidade}</span>
         </span>
       </div>
-      <canvas ref={canvasRef} style={{ width: "100%", height: 80, display: "block" }} />
+      <canvas ref={canvasRef} style={{ width: "100%", height: 120, display: "block" }} />
     </div>
   );
 }
@@ -427,34 +493,26 @@ export function AbaExames({ acompanhamentoId, paciente, acompanhamento }: AbaExa
       {/* TFG destaque + gráficos Cr/Ur/K em linha */}
       {(ultimoTFG !== null || serieNum("creatinina").length >= 1) && (
         <div>
-          {/* TFG em destaque */}
-          {ultimoTFG !== null && (
-            <div style={{ borderRadius: "var(--nc-radius-lg)", padding: "12px 16px", marginBottom: 12, background: estUltimo.bg, border: `1.5px solid ${estUltimo.cor}40`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div>
-                <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: estUltimo.cor, margin: "0 0 2px" }}>TFG-e · CKD-EPI 2021</p>
-                <p style={{ fontSize: 36, fontWeight: 900, fontFamily: "var(--mono)", color: estUltimo.cor, lineHeight: 1, margin: 0 }}>
-                  {ultimoTFG}
-                  <span style={{ fontSize: 13, fontWeight: 400, color: "var(--text3)", marginLeft: 6 }}>mL/min/1,73m²</span>
-                </p>
+          {/* Gráficos Cr / Ur / K — 3 colunas desktop, 1 mobile */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}
+            className="sm:grid-cols-4 grid-cols-2">
+            {ultimoTFG !== null && (
+              <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "var(--nc-radius-lg)", padding: "10px 12px", boxShadow: "var(--nc-shadow-sm)", minHeight: 180, display: "flex", flexDirection: "column" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
+                  <span style={{ fontSize: 12, color: "var(--text2)", fontWeight: 700 }}>TFG · CKD-EPI</span>
+                  <span style={{ fontSize: 16, fontWeight: 800, fontFamily: "var(--mono)", color: estUltimo.cor }}>
+                    {ultimoTFG} <span style={{ fontSize: 10, fontWeight: 400, color: "var(--text3)" }}>mL/min</span>
+                  </span>
+                </div>
                 {!isIRA && (
-                  <p style={{ fontSize: 13, fontWeight: 700, color: estUltimo.cor, margin: "4px 0 0" }}>DRC {estUltimo.label}</p>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: estUltimo.cor, margin: "auto 0 0" }}>DRC {estUltimo.label}</p>
                 )}
               </div>
-              {tfgSerie.length >= 2 && (
-                <div style={{ width: 120, opacity: 0.7 }}>
-                  <MiniGrafico valores={tfgSerie} datas={tfgDatas} cor={estUltimo.cor} label="TFG" unidade="" />
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Gráficos Cr / Ur / K — 3 colunas desktop, 1 mobile */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}
-            className="sm:grid-cols-3 grid-cols-1">
+            )}
             {[
-              { k: "creatinina", cor: "#dc2626", ref: 1.2 },
-              { k: "ureia",      cor: "#d97706", ref: 50  },
-              { k: "potassio",   cor: "#ea580c", ref: 5.0 },
+              { k: "creatinina", cor: "#e07b1a", ref: 1.2 },
+              { k: "ureia",      cor: "#0d9488", ref: 50  },
+              { k: "potassio",   cor: "#8b5cf6", ref: 5.0 },
             ].map(({ k, cor, ref }) => {
               const vals = serieNum(k); const dts = datasNum(k);
               const cfg = CAMPOS_NUMERICOS.find(c => c.k === k)!;
@@ -632,8 +690,11 @@ export function AbaExames({ acompanhamentoId, paciente, acompanhamento }: AbaExa
               </div>
 
               {/* Campos numéricos */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: "10px 14px", marginBottom: 16 }}>
-                {perfil.numericos.map(k => {
+              {agruparPorCategoria(perfil.numericos).map(({ cat, chaves }) => (
+              <div key={cat} style={{ marginBottom: 16 }}>
+              <p style={{ fontSize: 10, fontWeight: 700, color: "var(--accent)", textTransform: "uppercase", letterSpacing: "0.07em", margin: "0 0 8px" }}>{cat}</p>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: "10px 14px" }}>
+                {chaves.map(k => {
                   const cfg = CAMPOS_NUMERICOS.find(c => c.k === k);
                   if (!cfg) return null;
                   const v = formNum[k];
@@ -654,11 +715,15 @@ export function AbaExames({ acompanhamentoId, paciente, acompanhamento }: AbaExa
                   );
                 })}
               </div>
+              </div>
+              ))}
 
               {/* Campos texto */}
-              {perfil.textos.length > 0 && (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "10px 14px", marginBottom: 16 }}>
-                  {perfil.textos.map(k => {
+              {agruparPorCategoria(perfil.textos).map(({ cat, chaves }) => (
+              <div key={cat} style={{ marginBottom: 16 }}>
+              <p style={{ fontSize: 10, fontWeight: 700, color: "var(--accent)", textTransform: "uppercase", letterSpacing: "0.07em", margin: "0 0 8px" }}>{cat}</p>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "10px 14px" }}>
+                  {chaves.map(k => {
                     const cfg = CAMPOS_TEXTO.find(c => c.k === k);
                     if (!cfg) return null;
                     return (
@@ -670,7 +735,8 @@ export function AbaExames({ acompanhamentoId, paciente, acompanhamento }: AbaExa
                     );
                   })}
                 </div>
-              )}
+              </div>
+              ))}
 
               {/* Outros exames — lista dinâmica */}
               <div style={{ borderTop: "1px solid var(--border)", paddingTop: 12, marginTop: 4 }}>

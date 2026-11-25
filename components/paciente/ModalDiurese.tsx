@@ -12,10 +12,11 @@ interface ModalDiureseProps {
   acompanhamentoId: string;
   onClose: () => void;
   onSalvo: () => void;
+  aviso?: string;
 }
 
 /** Diurese do dia: volume (mL) e número de horas em que foi quantificada. */
-export function ModalDiurese({ acompanhamentoId, onClose, onSalvo }: ModalDiureseProps) {
+export function ModalDiurese({ acompanhamentoId, onClose, onSalvo, aviso }: ModalDiureseProps) {
   const [volume, setVolume] = useState("");
   const [horas, setHoras] = useState("24");
   const [erro, setErro] = useState<string | null>(null);
@@ -47,6 +48,9 @@ export function ModalDiurese({ acompanhamentoId, onClose, onSalvo }: ModalDiures
         <p style={{ fontSize: 12, color: "var(--text3)", margin: "4px 0 14px" }}>
           Informe o volume total e o tempo em que foi quantificado.
         </p>
+        {aviso && (
+          <p style={{ fontSize: 12, fontWeight: 700, color: "var(--amber)", margin: "0 0 12px" }}>{aviso}</p>
+        )}
 
         <div style={{ display: "flex", gap: 10 }}>
           <div style={{ flex: 1 }}>

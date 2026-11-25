@@ -641,14 +641,14 @@ export function AbaTerapiaDialitica({ acompanhamento, paciente, internacao, medi
           {MODALIDADES.map(m => (
             <button key={m.value}
               onClick={() => { setModalidade(m.value); setPrescricaoState({}); }}
-              className="cursor-pointer rounded-(--nc-radius-lg) border p-3 text-left transition hover:opacity-90"
+              className="flex h-full min-h-[92px] w-full cursor-pointer flex-col justify-center rounded-(--nc-radius-lg) border p-3 text-left transition hover:opacity-90"
               style={{
                 background: modalidade === m.value ? "var(--accent)" : "var(--card)",
                 borderColor: modalidade === m.value ? "var(--accent)" : "var(--border)",
                 color: modalidade === m.value ? "white" : "var(--text)",
               }}>
-              <p className="text-sm font-black" style={{ fontFamily: "var(--mono)" }}>{m.label}</p>
-              <p className="text-[11px] mt-0.5" style={{ color: modalidade === m.value ? "rgba(255,255,255,0.7)" : "var(--text3)" }}>
+              <p className="flex min-h-[2.6rem] items-center text-sm font-black leading-tight" style={{ fontFamily: "var(--mono)" }}>{m.label}</p>
+              <p className="mt-1 min-h-[2.2rem] text-[11px] leading-snug" style={{ color: modalidade === m.value ? "rgba(255,255,255,0.7)" : "var(--text3)" }}>
                 {m.sub}
               </p>
             </button>

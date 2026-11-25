@@ -17,11 +17,12 @@ const COMORBIDADES_OPCOES = [
  "Neoplasia", "Obesidade", "Tabagismo", "Transplante_renal",
 ];
 
+// Mesmos valores aceitos pelo banco (check em pacientes.etiologia_drc — ver migration 20261124_etiologia_drc.sql)
 const ETIOLOGIAS_DRC = [
- "Congenita_hereditaria", "Doenca_renal_policistica", "Glomerulopatia",
- "Indeterminada", "Nefrite_tubulo_intersticial",
- "Nefroesclerose_hipertensiva", "Doenca_renal_diabetica",
- "Nefropatia_por_refluxo", "Obstrutiva", "Outras",
+ "Nefropatia_diabetica", "Nefroesclerose_hipertensiva", "DRPAD",
+ "Glomerulopatia", "Nefrite_tubulo_intersticial", "Obstrutiva",
+ "Congenita_hereditaria", "Doenca_renal_policistica", "Nefropatia_por_refluxo",
+ "Indeterminada", "Outras",
 ];
 
 const DIAGNOSTICOS_PRINCIPAIS = [
@@ -317,7 +318,7 @@ export function NovoPacienteModal({
     }
   }
 
-  const inputClass = "nc-input";
+  const inputClass = "nc-input nc-field";
   const labelClass = "nc-label";
 
   return (
@@ -359,7 +360,7 @@ export function NovoPacienteModal({
         </div>
 
         {/* Conteúdo */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5" style={{ background: "var(--bg)" }}>
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-4 sm:px-6 sm:py-5" style={{ background: "var(--bg)" }}>
 
           {/* ETAPA 1: RG hospitalar — só no modo cadastro */}
           {!ehEdicao && (
@@ -381,7 +382,7 @@ export function NovoPacienteModal({
                     setErro(null);
                     setTentouEnviar(false);
                   }}
-                  className={`${inputClass} flex-1 disabled:opacity-60`}
+                  className={`${inputClass} min-w-0 sm:flex-1 disabled:opacity-60`}
                   placeholder="Apenas números (ex: 123456)"
                 />
                 {!rgConfirmado && (
@@ -389,7 +390,7 @@ export function NovoPacienteModal({
                     type="button"
                     onClick={handleVerificarRg}
                     disabled={verificando || !rg.trim()}
-                    className="nc-btn nc-btn-primary cursor-pointer"
+                    className="nc-btn nc-btn-primary nc-field-btn cursor-pointer"
                   >
                     {verificando ? "Verificando..." : "Verificar"}
                   </button>
@@ -494,8 +495,8 @@ export function NovoPacienteModal({
                     />
                   </Group>
                   <Group label="Data de nascimento" required>
-                    <input
-                      type="date" value={dataNascimento} onChange={(e) => setDataNascimento(e.target.value)}
+                    <CampoData
+                      value={dataNascimento} onChange={setDataNascimento}
                       className={`${inputClass} ${classeObrigatorio(camposObrigatoriosFaltando.dataNascimento)}`}
                       style={estiloObrigatorio(camposObrigatoriosFaltando.dataNascimento)}
                     />
@@ -550,8 +551,8 @@ export function NovoPacienteModal({
                       placeholder="Outro diagnóstico (ex.: amiloidose)"
                       className={inputClass}
                     />
-                    <button type="button" onClick={adicionarComorbidadeOutra} className="nc-chip cursor-pointer shrink-0"
-                      style={{ padding: "6px 12px", fontSize: 13, minHeight: 36 }}>
+                    <button type="button" onClick={adicionarComorbidadeOutra} className="nc-chip nc-field-btn cursor-pointer shrink-0"
+                      style={{ padding: "0 14px", fontSize: 13 }}>
                       + Adicionar
                     </button>
                   </div>
@@ -581,10 +582,9 @@ export function NovoPacienteModal({
                       className={inputClass}
                     />
                   </Group>
-                  <Group label="Data">
-                    <input
-                      type="date" value={dataCreatininaBasal}
-                      onChange={(e) => setDataCreatininaBasal(e.target.value)}
+                  <Group label="Data da última creatinina">
+                    <CampoData
+                      value={dataCreatininaBasal} onChange={setDataCreatininaBasal}
                       className={inputClass}
                     />
                   </Group>
@@ -605,9 +605,8 @@ export function NovoPacienteModal({
                 {!ehEdicao && (
                   <Row>
                     <Group label="Data de admissão" required>
-                      <input
-                        type="date" required value={dataAdmissao}
-                        onChange={(e) => setDataAdmissao(e.target.value)}
+                      <CampoData
+                        value={dataAdmissao} onChange={setDataAdmissao} required
                         className={inputClass}
                       />
                     </Group>
@@ -717,7 +716,7 @@ export function NovoPacienteModal({
 
                       <Row>
                         <Group label="Data provável de início da IRA">
-                          <input type="date" value={dataInicioLra} onChange={e => setDataInicioLra(e.target.value)} className={inputClass} />
+                          <CampoData value={dataInicioLra} onChange={setDataInicioLra} className={inputClass} />
                         </Group>
                       </Row>
                     </div>
@@ -851,6 +850,68 @@ export function NovoPacienteModal({
   );
 }
 
+// Data digitada no teclado: dd/mm/aaaa (o celular não precisa rolar o calendário)
+function isoParaBr(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : "";
+}
+
+function brParaIso(br: string): string {
+  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(br);
+  if (!m) return "";
+  const dia = Number(m[1]);
+  const mes = Number(m[2]);
+  const ano = Number(m[3]);
+  const dt = new Date(ano, mes - 1, dia);
+  if (dt.getFullYear() !== ano || dt.getMonth() !== mes - 1 || dt.getDate() !== dia) return "";
+  return `${m[3]}-${m[2]}-${m[1]}`;
+}
+
+function CampoData({
+  value, onChange, required, className, style,
+}: {
+  value: string;
+  onChange: (iso: string) => void;
+  required?: boolean;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
+  const [texto, setTexto] = useState(() => isoParaBr(value));
+  const [ultimoValor, setUltimoValor] = useState(value);
+  // Se o valor mudar de fora (ex.: ficha reativada), atualiza o texto
+  if (value !== ultimoValor) {
+    setUltimoValor(value);
+    setTexto(isoParaBr(value));
+  }
+
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      autoComplete="off"
+      placeholder="dd/mm/aaaa"
+      maxLength={10}
+      required={required}
+      value={texto}
+      onChange={(e) => {
+        const digitos = e.target.value.replace(/\D/g, "").slice(0, 8);
+        const formatado =
+          digitos.length > 4
+            ? `${digitos.slice(0, 2)}/${digitos.slice(2, 4)}/${digitos.slice(4)}`
+            : digitos.length > 2
+              ? `${digitos.slice(0, 2)}/${digitos.slice(2)}`
+              : digitos;
+        const iso = brParaIso(formatado);
+        setTexto(formatado);
+        setUltimoValor(iso);
+        onChange(iso);
+      }}
+      className={className}
+      style={style}
+    />
+  );
+}
+
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
@@ -864,14 +925,15 @@ function Section({ label, children }: { label: string; children: React.ReactNode
 }
 
 function Row({ children }: { children: React.ReactNode }) {
-  return <div className="mb-3 flex flex-wrap gap-3">{children}</div>;
+  // Celular: campos um abaixo do outro, em largura total. A partir de sm: lado a lado.
+  return <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:flex-wrap">{children}</div>;
 }
 
 function Group({
   label, flex, required, children,
 }: { label: string; flex?: number; required?: boolean; children: React.ReactNode }) {
   return (
-    <div className="flex min-w-35 flex-col gap-1" style={{ flex: flex || 1 }}>
+    <div className="nc-group flex w-full min-w-0 flex-col gap-1 sm:w-auto sm:min-w-35" style={{ flex: flex || 1 }}>
       <span className="nc-label" style={{ marginBottom: 0 }}>
         {label}
         {required && <span style={{ color: "var(--red)" }}> *</span>}
