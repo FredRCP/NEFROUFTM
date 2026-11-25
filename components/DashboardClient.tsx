@@ -43,13 +43,13 @@ async function buscarDados(supabase: ReturnType<typeof createClient>): Promise<L
   );
 }
 
-/** Ordena por setor e, dentro do setor, pelo número do leito (101 antes de 224). */
-function compararPorSetorELeito(a: LinhaDashboard, b: LinhaDashboard): number {
-  const setor = a.internacao.setor.localeCompare(b.internacao.setor, "pt-BR");
-  if (setor !== 0) return setor;
-  return (a.internacao.enfermaria_leito ?? "").localeCompare(
+/** Ordena pelo número do leito (101 antes de 224), dentro do grande grupo; o setor só desempata. */
+function compararPorLeito(a: LinhaDashboard, b: LinhaDashboard): number {
+  const leito = (a.internacao.enfermaria_leito ?? "").localeCompare(
     b.internacao.enfermaria_leito ?? "", "pt-BR", { numeric: true, sensitivity: "base" }
   );
+  if (leito !== 0) return leito;
+  return a.internacao.setor.localeCompare(b.internacao.setor, "pt-BR");
 }
 
 type FiltroStatus = "todos" | "pendentes" | "avaliados" | "hd_hoje";
@@ -160,7 +160,7 @@ export function DashboardClient() {
   const hdHoje = linhasPorBusca.filter((l) => l.acompanhamento.situacao_dialitica === "hd_hoje").length;
 
   const linhasPorGrupo = new Map<string, LinhaDashboard[]>();
-  for (const linha of [...linhasFiltradas].sort(compararPorSetorELeito)) {
+  for (const linha of [...linhasFiltradas].sort(compararPorLeito)) {
     const grupo = getGrupoBySetor(linha.internacao.setor);
     if (!linhasPorGrupo.has(grupo)) linhasPorGrupo.set(grupo, []);
     linhasPorGrupo.get(grupo)!.push(linha);
@@ -186,17 +186,12 @@ export function DashboardClient() {
   ];
 
   return (
-    <div className="p-4 sm:p-6" style={{ background: "var(--bg)" }}>
+    <div className="p-4 pb-24 sm:p-6 sm:pb-6" style={{ background: "var(--bg)" }}>
+      {/* Um único aviso: a partir de 16h30, com pacientes não avaliados e pendências */}
       <AvisoFimDoDia
         naoAvaliados={pendentes}
         comPendencia={linhasPorBusca.filter((l) => l.pendencias.length > 0).length}
       />
-      {pendentes > 0 && (
-        <div className="mb-4 rounded-(--nc-radius) px-4 py-2.5 text-sm"
-          style={{ background: "var(--red-dim)", color: "var(--red)", border: "1px solid rgba(176,48,32,0.2)" }}>
-          ⚠ Existem <strong>{pendentes}</strong> paciente(s) sem avaliação registrada hoje.
-        </div>
-      )}
 
       {/* Busca + novo paciente */}
       <div className="mb-3 flex gap-3">
@@ -288,13 +283,14 @@ export function DashboardClient() {
         </div>
       )}
 
+      {/* Celular: um só botão, centralizado embaixo */}
       <button
         onClick={() => setModalAberto(true)}
         aria-label="Novo paciente"
-        className="fixed bottom-5 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full text-3xl font-light text-white shadow-lg sm:hidden"
+        className="fixed bottom-5 left-1/2 z-40 flex h-12 -translate-x-1/2 items-center gap-2 rounded-full px-5 text-sm font-bold text-white shadow-lg sm:hidden"
         style={{ background: "var(--accent)" }}
       >
-        +
+        <span className="text-lg leading-none">+</span> Novo paciente
       </button>
 
       {modalAberto && (

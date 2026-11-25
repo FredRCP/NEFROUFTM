@@ -510,6 +510,13 @@ export function AbaEvolucoes({ acompanhamentoId, acompanhamento, evolucoes, usua
         {/* Aba Editor */}
         {abaMobile === "editor" && (
           <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden", background: "var(--card)" }}>
+            {!novaEvolucao && (
+              <div style={{ padding: "8px 16px", borderBottom: "1px solid var(--border)", background: "var(--card2)", flexShrink: 0, display: "flex", justifyContent: "flex-end" }}>
+                <button onClick={handleNovaEvolucao} className="nc-btn nc-btn-primary" style={{ fontSize: 13, padding: "6px 12px" }}>
+                  + Nova evolução
+                </button>
+              </div>
+            )}
             {novaEvolucao ? (
               <>
                 <div style={{ padding: "10px 16px", borderBottom: "1px solid var(--border)", background: "var(--card2)", flexShrink: 0, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
