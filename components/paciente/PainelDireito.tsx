@@ -120,6 +120,7 @@ export function PainelDireito({ acompanhamentoId, paciente, acompanhamento }: Pa
   const [horas, setHoras] = useState("24");
   const [dataDiurese, setDataDiurese] = useState(() => new Date().toLocaleDateString("sv-SE"));
   const [graficoAberto, setGraficoAberto] = useState(false);
+  const [abaPainel, setAbaPainel] = useState<"exames" | "diurese">("exames");
   const [modalDiurese, setModalDiurese] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -223,7 +224,22 @@ export function PainelDireito({ acompanhamentoId, paciente, acompanhamento }: Pa
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
 
+      {/* Abas do painel */}
+      <div style={{ display: "flex", borderBottom: "1px solid var(--border)", background: "var(--card)", flexShrink: 0 }}>
+        {(["exames", "diurese"] as const).map(k => (
+          <button key={k} type="button" onClick={() => setAbaPainel(k)}
+            style={{
+              flex: 1, padding: "10px 0", fontSize: 12, fontWeight: 700, background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font)",
+              borderBottom: abaPainel === k ? "2px solid var(--accent)" : "2px solid transparent",
+              color: abaPainel === k ? "var(--accent)" : "var(--text3)",
+            }}>
+            {k === "exames" ? "Exames" : "Diurese"}
+          </button>
+        ))}
+      </div>
+
       {/* ── DIURESE — topo, destaque azul ──────────────────────────── */}
+      {abaPainel === "diurese" && (
       <div style={{
         flexShrink: 0,
         background: "var(--accent-dim)",
@@ -367,8 +383,10 @@ export function PainelDireito({ acompanhamentoId, paciente, acompanhamento }: Pa
           </div>
         )}
       </div>
+      )}
 
       {/* ── TFG + KDIGO + EXAMES ───────────────────────────────────── */}
+      {abaPainel === "exames" && (
       <div style={{ flex: 1, overflowY: "auto", padding: "10px 12px" }}>
 
         {/* TFG — destaque, sem classificação DRC para IRA */}
@@ -456,6 +474,7 @@ export function PainelDireito({ acompanhamentoId, paciente, acompanhamento }: Pa
           </>
         )}
       </div>
+      )}
     </div>
   );
 }
