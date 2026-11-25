@@ -1,8 +1,0 @@
-{
-  "crons": [
-    {
-      "path": "/api/cron/aviso-fim-do-dia",
-      "schedule": "30 19 * * *"
-    }
-  ]
-}

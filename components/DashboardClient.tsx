@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { PacienteCard } from "@/components/PacienteCard";
-import { AtivarAvisosCelular } from "@/components/AtivarAvisosCelular";
 import { NovoPacienteModal } from "@/components/paciente/NovoPacienteModal";
 import { GRANDES_GRUPOS, getGrupoBySetor } from "@/types/database";
 import type { AcompanhamentoNefro, Paciente, Internacao, Pendencia } from "@/types/database";
@@ -187,13 +186,17 @@ export function DashboardClient() {
   ];
 
   return (
-    <div className="p-4 pb-24 sm:p-6 sm:pb-6" style={{ background: "var(--bg)" }}>
-      {/* Um único aviso: a partir de 16h30, com pacientes não avaliados e pendências */}
+    <div className="p-4 sm:p-6" style={{ background: "var(--bg)" }}>
       <AvisoFimDoDia
         naoAvaliados={pendentes}
         comPendencia={linhasPorBusca.filter((l) => l.pendencias.length > 0).length}
       />
-      <AtivarAvisosCelular />
+      {pendentes > 0 && (
+        <div className="mb-4 rounded-(--nc-radius) px-4 py-2.5 text-sm"
+          style={{ background: "var(--red-dim)", color: "var(--red)", border: "1px solid rgba(176,48,32,0.2)" }}>
+          ⚠ Existem <strong>{pendentes}</strong> paciente(s) sem avaliação registrada hoje.
+        </div>
+      )}
 
       {/* Busca + novo paciente */}
       <div className="mb-3 flex gap-3">
@@ -285,14 +288,13 @@ export function DashboardClient() {
         </div>
       )}
 
-      {/* Celular: um só botão, centralizado embaixo */}
       <button
         onClick={() => setModalAberto(true)}
         aria-label="Novo paciente"
-        className="fixed bottom-5 left-1/2 z-40 flex h-12 -translate-x-1/2 items-center gap-2 rounded-full px-5 text-sm font-bold text-white shadow-lg sm:hidden"
+        className="fixed bottom-5 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full text-3xl font-light text-white shadow-lg sm:hidden"
         style={{ background: "var(--accent)" }}
       >
-        <span className="text-lg leading-none">+</span> Novo paciente
+        +
       </button>
 
       {modalAberto && (
