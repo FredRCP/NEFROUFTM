@@ -206,7 +206,7 @@ export function DashboardClient() {
             style={{ paddingLeft: 36 }}
           />
         </div>
-        <button onClick={() => setModalAberto(true)} className="nc-btn nc-btn-primary hidden shrink-0 sm:inline-flex">
+        <button onClick={() => setModalAberto(true)} className="nc-btn nc-btn-primary !hidden shrink-0 sm:!inline-flex">
           <span className="text-base leading-none">+</span> Novo paciente
         </button>
       </div>

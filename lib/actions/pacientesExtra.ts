@@ -23,6 +23,35 @@ export async function registrarDiurese(
   return { sucesso: true };
 }
 
+/** Registra que a diurese do dia não será anotada, com justificativa obrigatória. */
+export async function registrarSemDiurese(
+  acompanhamentoId: string,
+  data: string,
+  justificativa: string
+) {
+  const texto = justificativa.trim();
+  if (texto.length < 5) return { sucesso: false, erro: "Escreva a justificativa." };
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const { error } = await supabase.from("diureses").upsert(
+    {
+      acompanhamento_id: acompanhamentoId,
+      data,
+      volume_ml: null,
+      horas: null,
+      sem_registro: true,
+      justificativa: texto,
+      criado_por: user?.id,
+    },
+    { onConflict: "acompanhamento_id,data" }
+  );
+
+  if (error) return { sucesso: false, erro: error.message };
+  return { sucesso: true };
+}
+
 export async function editarDiurese(
   diureseId: string,
   volumeMl: number,

@@ -8,6 +8,10 @@ import { ModalDiurese } from "@/components/paciente/ModalDiurese";
 import type { Paciente, AcompanhamentoNefro } from "@/types/database";
 
 interface PontoDiurese { id: string; data: string; volume_ml: number; horas: number; }
+// Dias marcados como "diurese não anotada" não entram no gráfico nem na lista
+function semDiuresesSemRegistro(lista: unknown[]): PontoDiurese[] {
+  return (lista as (PontoDiurese & { sem_registro?: boolean })[]).filter(d => !d.sem_registro);
+}
 interface ExameRow {
   id: string; data: string;
   parametros: Record<string, number | null>;
@@ -149,7 +153,7 @@ export function PainelDireito({ acompanhamentoId, paciente, acompanhamento }: Pa
 
   const carregarDiureses = useCallback(async () => {
     const r = await buscarDiureses(acompanhamentoId);
-    if (r.sucesso) setDiureses(r.dados as PontoDiurese[]);
+    if (r.sucesso) setDiureses(semDiuresesSemRegistro(r.dados));
   }, [acompanhamentoId]);
 
   const sexo: "F" | "M" = paciente.sexo === "F" ? "F" : "M";
@@ -168,7 +172,7 @@ export function PainelDireito({ acompanhamentoId, paciente, acompanhamento }: Pa
         setExames((data || []) as ExameRow[]);
       });
     buscarDiureses(acompanhamentoId).then(r => {
-      if (ativo && r.sucesso) setDiureses(r.dados as PontoDiurese[]);
+      if (ativo && r.sucesso) setDiureses(semDiuresesSemRegistro(r.dados));
     });
     return () => { ativo = false; };
   }, [acompanhamentoId, supabase, idade, sexo]);

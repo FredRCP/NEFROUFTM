@@ -31,116 +31,97 @@ function isHoje(iso: string) {
   return new Date(iso).toLocaleDateString("sv-SE") === hojeLocal();
 }
 
-// Modelo pronto para a evolução diária (o médico completa os campos entre ___)
-const MODELO_EVOLUCAO = `EVOLUÇÃO NEFROLÓGICA
+// Modelos de evolução (o médico completa os campos entre ___)
+const MODELO_IRA = `NEFROLOGIA — AGUDOS
 
-S:
+DX: IRA KDIGO...
 
-O:
-- PA: ___ mmHg | FC: ___ bpm | FR: ___ irpm | Tax: ___ °C | SpO2: ___%
-- Peso: ___ kg (atual) | ___ kg (admissão)
-- Balanço hídrico 24h: entrada ___ mL | saída ___ mL | balanço ___ mL
-- Diurese: ___ mL em ___ h (ver painel ao lado)
-- Exame físico:
-- Laboratório: Cr ___ | Ur ___ | K ___ | Na ___ | HCO3 ___ | Ca ___ | P ___ | Hb ___
+Paciente internado com quadro clínico de 
 
-A:
+Exame físico:
+BEG, A, A, A, C, H
+MV+ bilateral, sem RA
+PA:    mmHg | FC:    bpm
+Abdome: inocente
+Edema:
 
-P:
-- Dieta:
-- Hidratação / balanço alvo:
-- Medicações (nefrotóxicos, ajuste de doses):
-- Terapia dialítica:
-- Exames solicitados:
-- Próxima avaliação:`;
+Diurese:    mL em  h (ver painel ao lado)
+Balanço hídrico 24h:   mL
+
+Exames: Cr:     Ur:    Na:     K:     HCO3:
+
+CD:
+- Manter PAM > 70 mmHg
+- Evitar AINEs, IECA/BRA, contraste e drogas nefrotóxicas
+- Quantificar diurese rigorosamente
+- Ajustar medicações para função renal
+- Solicitar EAS, US de rins e vias urinárias e gasometria venosa
+- Solicitar função renal diariamente
+- Tratamento conservador ou indicado TRS: `;
+
+const MODELO_DRC_DIALITICO = `NEFROLOGIA
+
+DX: DRC dialítica + 
+Acesso vascular: 
+Peso seco:     kg
+Centro de diálise:
+Última HD:
+
+Paciente internado com quadro clínico de
+
+Exame físico:
+BEG, A, A, A, C, H
+MV+ bilateral, sem RA
+PA:     mmHg  FC:     bpm
+Abdome: 
+Edema:
+
+Diurese residual:     mL/24h (ver painel ao lado)
+
+Exames: Cr:     Ur:     Na:     K:     HCO3:
+
+CD:
+- Programo HD para 
+- Ajustar medicações para diálise`;
+
+const MODELO_AVALIACAO = `NEFROLOGIA — AVALIAÇÃO PADRÃO
+
+QP: 
+
+HPMA: 
+
+Diurese:    mL/24h (ver painel ao lado)  Aspecto:   Nictúria:   Jato: 
+Edema:   
+Queixas GI: 
+Ingesta hídrica: 
+
+Antecedentes:
+CMB: 
+MEU: 
+HCV: 
+Alergia: 
+
+Exames: 
+
+Exame físico:
+BEG, A, A, A, C, H
+MV+ bilateral, sem RA
+PA:    mmHg  FC:    bpm
+Abdome: 
+Edema: 
+
+HD: 
+
+CD:`;
 
 type ModeloEvolucao = { id: string; titulo: string; sub: string; texto: string };
 
 const MODELOS: ModeloEvolucao[] = [
-  { id: "diaria", titulo: "Evolução diária", sub: "Modelo padrão de enfermaria", texto: MODELO_EVOLUCAO },
-  {
-    id: "dialise", titulo: "Diálise (HD)", sub: "Sessão, UF e peso seco",
-    texto: `EVOLUÇÃO — DIÁLISE
-
-S:
-
-O:
-- Sessão: ___ | Acesso: ___ | UF prescrita: ___ mL | UF realizada: ___ mL
-- Peso pré: ___ kg | Peso pós: ___ kg | Peso seco: ___ kg
-- PA pré/pós: ___ / ___ mmHg | Intercorrências: ___
-- Laboratório: K ___ | Ca ___ | P ___ | Hb ___
-
-A:
-
-P:
-- Peso seco / ajuste de UF:
-- Prescrição de diálise:
-- Anticoagulação:
-- Próxima sessão:`,
-  },
-  {
-    id: "ira", titulo: "IRA / UTI", sub: "Balanço, drogas e metas",
-    texto: `EVOLUÇÃO — IRA / UTI
-
-S:
-
-O:
-- Sinais vitais: PA ___ | FC ___ | Tax ___ | SpO2 ___ | Drogas vasoativas: ___
-- Balanço 24h: ___ mL | Diurese: ___ mL/kg/h
-- Cr ___ (basal ___) | K ___ | HCO3 ___ | Lactato ___
-- Exames de imagem / culturas:
-
-A:
-- Estágio KDIGO: ___ | Etiologia provável: ___
-
-P:
-- Metas hídricas / hemodinâmicas:
-- Nefrotóxicos e ajuste de doses:
-- Indicação de TSR: ___
-- Revisão diária:`,
-  },
-  {
-    id: "glomerulo", titulo: "Glomerulopatia", sub: "Proteinúria, imunossupressão",
-    texto: `EVOLUÇÃO — GLOMERULOPATIA
-
-S:
-
-O:
-- PA: ___ mmHg | Edema: ___ | Peso: ___ kg
-- Proteinúria (RPC/RAC/24h): ___ | Albumina: ___ | Colesterol: ___
-- Cr: ___ | TFG: ___ mL/min
-- Sorologias / autoanticorpos: ___
-
-A:
-
-P:
-- Imunossupressão (droga, dose, tempo):
-- Antiproteinúricos (IECA/BRA/iSGLT2):
-- Anticoagulação / profilaxia:
-- Biópsia / próximos exames:
-- Próxima avaliação:`,
-  },
-  {
-    id: "transplante", titulo: "Pós-transplante renal", sub: "Enxerto, imunossupressão",
-    texto: `EVOLUÇÃO — TRANSPLANTE RENAL
-
-S:
-
-O:
-- PA: ___ | Peso: ___ kg | Diurese: ___ mL/24h
-- Cr: ___ (alta ___) | K ___ | Glicemia ___
-- Nível de imunossupressor (tacro/ciclo): ___
-- Ultrassom de enxerto: ___
-
-A:
-
-P:
-- Imunossupressão:
-- Profilaxias (CMV, PJP, fungos):
-- Controle glicêmico / PA:
-- Próximo controle de nível:`,
-  },
+  { id: "ira", titulo: "IRA", sub: "KDIGO, metas e cuidados", texto: MODELO_IRA },
+  { id: "drc_dialitico", titulo: "DRC dialítico", sub: "Acesso, peso seco e programação de HD", texto: MODELO_DRC_DIALITICO },
+  { id: "avaliacao", titulo: "Avaliação padrão", sub: "Avaliação diária da enfermaria", texto: MODELO_AVALIACAO },
 ];
+
 
 function MenuModelos({ onEscolher }: { onEscolher: (m: ModeloEvolucao) => void }) {
   const [aberto, setAberto] = useState(false);
