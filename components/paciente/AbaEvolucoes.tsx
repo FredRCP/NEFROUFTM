@@ -41,7 +41,7 @@ Paciente internado com quadro clínico de
 Exame físico:
 BEG, A, A, A, C, H
 MV+ bilateral, sem RA
-PA:    mmHg | FC:    bpm
+PA:      mmHg   FC:      bpm
 Abdome: inocente
 Edema:
 
