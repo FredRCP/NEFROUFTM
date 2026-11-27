@@ -94,9 +94,8 @@ export function ModalDiurese({ acompanhamentoId, onClose, onSalvo, aviso }: Moda
             <button
               type="button"
               onClick={() => { setModo("justificar"); setErro(null); }}
-              style={{ ...botaoTexto, display: "block", margin: "14px auto 0", color: "var(--accent)", fontWeight: 700, fontSize: 12 }}
-            >
-              Não vou anotar a diurese hoje
+style={{ display: "block", width: "100%", margin: "14px 0 0", padding: "10px 12px", fontSize: 13, fontWeight: 800, color: "var(--accent)", background: "var(--accent-dim)", border: "1px solid var(--accent)", borderRadius: "var(--nc-radius)", cursor: "pointer", fontFamily: "var(--font)" }}            >
+              Não vou anotar a diurese
             </button>
           </>
         ) : (
